@@ -482,6 +482,28 @@ If universality is required, Clements is preferable to Reck (lower depth at same
 For lossy foundries ($> 0.3$\,dB/MZI), butterfly's advantage grows.
 We recommend investing in topology selection before noise-aware training, as the former provides larger robustness gains without sacrificing clean accuracy.
 These guidelines apply to the tested regime ($N \leq 32$, classification tasks); they may not hold at $N \geq 128$ or for tasks that fully exploit unitary expressiveness.
+Table~\ref{tab:guidelines} summarizes these recommendations.
+
+\begin{table}[t]
+\caption{Topology selection guidelines based on this study's findings.}
+\label{tab:guidelines}
+\begin{ruledtabular}
+\begin{tabular}{lll}
+Use case & Recommendation & Rationale \\
+\hline
+Classification / inference & Butterfly & 15$\times$ lower cost, best \\
+ & & robustness, non-universality \\
+ & & not limiting \\
+Lossy foundry & Butterfly & Depth advantage amplified \\
+({>}\,0.3\,dB/MZI) & & by insertion loss \\
+Universality required & Clements & Full $U(N)$ coverage at \\
+(quantum, channel est.) & & lower depth than Reck \\
+Improving robustness & Change topology & Topology choice more \\
+of deep meshes & first & effective than noise-aware \\
+ & & training \\
+\end{tabular}
+\end{ruledtabular}
+\end{table}
 
 \textit{The benchmark framework.}
 The framework is open-source and extensible: adding a topology requires implementing a single function that returns a list of MZI layers and port assignments.
