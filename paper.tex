@@ -358,7 +358,7 @@ SCF Fractal ($84.7 \pm 0.9$\%) slightly outperforms Clements ($82.7 \pm 0.9$\%) 
 \includegraphics[width=0.48\textwidth]{results/figures/pareto_sigma0.00_fmnist.png}%
 \hfill
 \includegraphics[width=0.48\textwidth]{results/figures/pareto_sigma0.10_fmnist.png}
-\caption{Pareto front: accuracy versus hardware cost (MZIs\,$\times$\,depth) for all topologies and mesh sizes. Left column: clean ($\sigma{=}0$). Right column: noisy ($\sigma{=}0.1$\,rad). Top row: vowel dataset. Bottom row: Fashion-MNIST. Dashed line indicates the Pareto front. Multiple runs with different seeds appear as overlapping points at the same hardware cost for $N{=}16$ on vowel.}
+\caption{Pareto front: accuracy versus hardware cost (MZIs\,$\times$\,depth) for all topologies and mesh sizes. Left column: clean ($\sigma{=}0$). Right column: noisy ($\sigma{=}0.1$\,rad). Top row: vowel dataset (mean $\pm$ std over 4 seeds). Bottom row: Fashion-MNIST (single runs). Dashed line indicates the Pareto front computed from mean values.}
 \label{fig:pareto}
 \end{figure*}
 
@@ -448,7 +448,7 @@ Butterfly matches or exceeds universal topologies at $N \geq 8$ despite its non-
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.9\columnwidth]{results/figures/scaling_sigma0.00_vowel.png}
-\caption{Clean accuracy versus mesh size $N$ on vowel. $N{=}32$ was run for Clements and butterfly only. At $\sigma{=}0.1$ (not shown), the gap widens further in butterfly's favor.}
+\caption{Clean accuracy versus mesh size $N$ on vowel (mean $\pm$ std over 4 seeds). $N{=}32$ was run for Clements and butterfly only.}
 \label{fig:scaling}
 \end{figure}
 
