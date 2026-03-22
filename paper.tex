@@ -308,6 +308,7 @@ Training uses Adam optimization for 100 epochs (vowel) or 15--30 epochs (Fashion
 
 Models are evaluated at seven phase noise levels: $\sigma \in \{0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.2\}$\,rad.
 For $\sigma > 0$, we run 30 Monte Carlo trials and report mean accuracy and standard deviation.
+At 30 trials, the standard error of the mean accuracy is below 0.015 for all configurations tested, confirming adequate convergence.
 The \textit{robustness ratio} is defined as the mean accuracy at $\sigma{=}0.2$\,rad divided by the clean accuracy ($\sigma{=}0$).
 \textit{Hardware cost} is defined as $\text{MZI count} \times \text{optical depth}$, a proxy for chip area and worst-case latency.
 This composite metric is a simplification; MZI count and optical depth have distinct physical implications (chip area versus accumulated loss).
@@ -318,8 +319,10 @@ Pareto optimality identifies non-dominated points across the accuracy--cost plan
 \subsection{Datasets}
 
 \textbf{Deterding vowel}~\cite{shen2017}: 11 classes, 10 features, ${\sim}550$ samples. The standard PNN benchmark since Shen~\textit{et al.}; included for comparability with prior work.
+PCA at $N{=}4, 8, 16$ retains 68.9\%, 91.2\%, and 100\% of the variance, respectively; the dataset is fully represented at $N{=}16$.
 
 \textbf{Fashion-MNIST}~\cite{xiao2017}: 10 classes, 784 features PCA-reduced to $N$, 60{,}000 training / 10{,}000 test samples. A harder task that tests whether topology advantages persist with more data and more classes.
+PCA at $N{=}4, 8, 16$ retains only 47.0\%, 59.2\%, and 67.6\% of the variance, so accuracy is partly limited by the input representation rather than the mesh topology.
 
 
 %% ================================================================
@@ -363,7 +366,7 @@ SCF Fractal ($84.7 \pm 0.9$\%) slightly outperforms Clements ($82.7 \pm 0.9$\%) 
 \includegraphics[width=0.48\textwidth]{results/figures/pareto_sigma0.00_fmnist.png}%
 \hfill
 \includegraphics[width=0.48\textwidth]{results/figures/pareto_sigma0.10_fmnist.png}
-\caption{Pareto front: accuracy versus hardware cost (MZIs\,$\times$\,depth) for all topologies and mesh sizes. Left column: clean ($\sigma{=}0$). Right column: noisy ($\sigma{=}0.1$\,rad). Top row: vowel dataset (mean $\pm$ std over 4 seeds). Bottom row: Fashion-MNIST (single runs). Dashed line indicates the Pareto front computed from mean values.}
+\caption{Pareto front: accuracy versus hardware cost (MZIs\,$\times$\,depth) for all topologies and mesh sizes. Left column: clean ($\sigma{=}0$). Right column: noisy ($\sigma{=}0.1$\,rad). Top row: vowel dataset (mean $\pm$ std over 4 seeds). Bottom row: Fashion-MNIST (mean $\pm$ std over 3--4 seeds at $N{=}4,8$; single run at $N{=}16$). Dashed line indicates the Pareto front computed from mean values.}
 \label{fig:pareto}
 \end{figure*}
 
@@ -466,6 +469,9 @@ Butterfly's Pareto dominance derives from its $O(\log N)$ depth.
 Depth drives both phase noise accumulation and insertion loss, making it the primary determinant of robustness in realistic photonic systems.
 However, butterfly implements only a strict subgroup of $U(N)$: for applications requiring arbitrary unitary transformations (quantum computing, optical channel estimation), universal topologies like Clements remain necessary.
 Our results show that classification does not require universality: the network learns effective transformations within the butterfly subgroup at every tested scale.
+We also tested 2-layer architectures with modReLU nonlinearity at $N{=}16$ on vowel.
+Adding a second layer did not improve accuracy for either topology: butterfly dropped from $84.3 \pm 1.7$\% to $79.6 \pm 3.2$\%, while Clements collapsed to $45.8 \pm 15.3$\% with high variance across seeds.
+The doubled optical depth (8 and 32 layers respectively) appears to outweigh any expressiveness gain, suggesting that for these tasks and noise levels, a single shallow layer is preferable.
 
 \textit{What we did not model.}
 Our simulations have several simplifications that could affect the relative topology ranking:
@@ -515,7 +521,7 @@ Validated implementations of diamond, braid, and other emerging topologies would
 \section{Conclusion}
 \label{sec:conclusion}
 
-We compared four MZI mesh topologies under identical training, insertion loss, and phase noise conditions across 72 experiments.
+We compared four MZI mesh topologies under identical training, insertion loss, and phase noise conditions across 133 experiments.
 Butterfly/FFT consistently occupies the Pareto front, achieving comparable classification accuracy to universal topologies at substantially lower hardware cost and with better noise robustness.
 The advantage is driven by its $O(\log N)$ optical depth and grows with both mesh size and insertion loss.
 In the tested regime, topology choice had a larger effect on robustness than noise-aware training.
