@@ -23,9 +23,9 @@
 \begin{abstract}
 Photonic neural networks (PNNs) based on Mach--Zehnder interferometer (MZI) meshes can implement matrix--vector multiplication at the speed of light, but choosing among proposed mesh topologies requires navigating tradeoffs between accuracy, hardware cost, and robustness to fabrication impairments.
 No unified comparison under identical conditions exists.
-We present a Pareto benchmark of four topologies---Clements, Reck, butterfly/FFT, and SCF fractal---evaluated with physically meaningful per-MZI insertion loss in the forward pass and Monte Carlo phase noise analysis (7 noise levels, 30 trials each) on two classification datasets.
+We present a Pareto benchmark of four topologies (Clements, Reck, butterfly/FFT, and SCF fractal), evaluated with physically meaningful per-MZI insertion loss in the forward pass and Monte Carlo phase noise analysis (7 noise levels, 30 trials each) on two classification datasets.
 Butterfly/FFT dominates the Pareto front at all tested scales ($N{=}4$ to 32): at $N{=}16$ it achieves $84.3 \pm 1.7$\% accuracy (over 4 seeds) at 15$\times$ lower hardware cost than Clements, with 1.8$\times$ better noise robustness.
-This advantage grows with insertion loss---at 0.5\,dB/MZI, butterfly drops only 2.7 percentage points (averaged over 4 seeds) while Clements drops 4.6.
+This advantage grows with insertion loss: at 0.5\,dB/MZI, butterfly drops only 2.7 percentage points (averaged over 4 seeds) while Clements drops 4.6.
 Noise-aware training improves deep topologies but cannot close the depth gap: butterfly \emph{without} noise-aware training outperforms Clements \emph{with} it.
 The framework and data are open-source for extending to additional topologies.
 \end{abstract}
@@ -98,7 +98,7 @@ SCF Fractal & $N(N{-}1)/2$ & ${\sim}N$ & Yes & \cite{basani2023} \\
 
 \textbf{Reck}~\cite{reck1994}: a triangular mesh that eliminates one off-diagonal matrix element per column. Same MZI count as Clements but deeper ($2N{-}3$) due to less parallelism.
 
-\textbf{Butterfly/FFT}~\cite{tian2022,feng2022}: stride-based connections following the FFT butterfly pattern. Uses only $\frac{N}{2}\log_2 N$ MZIs at depth $\log_2 N$---dramatically fewer and shallower than universal topologies---but cannot represent arbitrary unitaries.
+\textbf{Butterfly/FFT}~\cite{tian2022,feng2022}: stride-based connections following the FFT butterfly pattern. Uses only $\frac{N}{2}\log_2 N$ MZIs at depth $\log_2 N$, dramatically fewer and shallower than universal topologies, but cannot represent arbitrary unitaries.
 
 \textbf{SCF Fractal}~\cite{basani2023}: a recursive cosine-sine decomposition. Same MZI count as Clements with depth ${\sim}N$, but error scales theoretically as $O(N\sigma^4)$ rather than $O(N^2\sigma^2)$.
 
@@ -342,7 +342,7 @@ SCF Fractal & 120 & 15 & 1800 & $84.7 \pm 0.9$ & $0.210 \pm 0.013$ \\
 \end{table}
 
 Butterfly occupies the Pareto-optimal lower-left region (low cost, competitive accuracy) at every noise level.
-At $N{=}16$ on vowel, butterfly achieves $84.3 \pm 1.7$\% accuracy at hardware cost 128, compared to Clements at $82.7 \pm 0.9$\% and cost 1920---a 15$\times$ cost reduction with comparable accuracy.
+At $N{=}16$ on vowel, butterfly achieves $84.3 \pm 1.7$\% accuracy at hardware cost 128, compared to Clements at $82.7 \pm 0.9$\% and cost 1920, representing a 15$\times$ cost reduction with comparable accuracy.
 On Fashion-MNIST, the pattern is similar: butterfly reaches 79.7\% at cost~128 versus Clements at 78.0\% at cost~1920.
 At $N{=}32$ the gap widens further: butterfly achieves 85.5\% at cost 400, versus Clements at 82.2\% at cost 15{,}872 (40$\times$).
 
@@ -370,7 +370,7 @@ There is a clear relationship between optical depth and noise sensitivity, thoug
 Butterfly (depth~4) retains $37.7 \pm 3.2$\% of its clean accuracy at $\sigma{=}0.2$ on vowel (averaged over 4 seeds) and 43\% on Fashion-MNIST.
 Clements (depth~16) and SCF Fractal (depth~15) retain only $20.8 \pm 0.4$\% and $21.0 \pm 1.3$\%, respectively.
 
-Reck presents a notable result: despite having the deepest topology (depth~29), it achieves robustness of $0.252 \pm 0.029$---consistently better than Clements ($0.208 \pm 0.004$) across all 4 training seeds.
+Reck presents a notable result: despite having the deepest topology (depth~29), it achieves robustness of $0.252 \pm 0.029$, consistently better than Clements ($0.208 \pm 0.004$) across all 4 training seeds.
 We attribute this to Reck's triangular structure, in which some output ports are reached through significantly fewer MZIs than the maximum depth, effectively creating a distribution of path lengths rather than a uniform depth.
 This suggests that \emph{maximum depth} alone does not fully determine robustness; the distribution of path lengths matters.
 
@@ -391,7 +391,7 @@ The $\sigma^4$ advantage likely manifests at very small $\sigma$ where the depth
 Table~\ref{tab:loss} shows the effect of increasing per-MZI insertion loss from 0.2 to 0.5\,dB at $N{=}16$ on vowel, averaged over 4 random seeds.
 Butterfly is the most loss-tolerant topology: its mean clean accuracy drops only 2.6\,pp from 0.2 to 0.5\,dB/MZI (from $84.3 \pm 1.7$\% to $81.7 \pm 0.4$\%), because signals traverse only 4 MZIs.
 Clements drops 4.6\,pp (from $82.7 \pm 0.9$\% to $78.1 \pm 1.5$\%) and SCF Fractal drops 5.0\,pp, as their signals traverse 15--16 MZIs.
-The robustness ratio remains largely stable across loss levels for all topologies, indicating that the topology ranking does not change with foundry quality---butterfly's advantage simply grows in magnitude.
+The robustness ratio remains largely stable across loss levels for all topologies, indicating that the topology ranking does not change with foundry quality; butterfly's advantage simply grows in magnitude.
 
 \begin{table}[t]
 \caption{Insertion loss sensitivity at $N{=}16$, vowel dataset, averaged over 4 random seeds. Clean accuracy (\%) and robustness ratio at three loss levels. Uncertainties are one standard deviation.}
@@ -457,17 +457,17 @@ Butterfly matches or exceeds universal topologies at $N \geq 8$ despite its non-
 \section{Discussion}
 \label{sec:discussion}
 
-\textit{Why butterfly wins---and when it might not.}
+\textit{Why butterfly wins, and when it might not.}
 Butterfly's Pareto dominance derives from its $O(\log N)$ depth.
 Depth drives both phase noise accumulation and insertion loss, making it the primary determinant of robustness in realistic photonic systems.
 However, butterfly implements only a strict subgroup of $U(N)$: for applications requiring arbitrary unitary transformations (quantum computing, optical channel estimation), universal topologies like Clements remain necessary.
-Our results show that classification does not require universality---the network learns effective transformations within the butterfly subgroup at every tested scale.
+Our results show that classification does not require universality: the network learns effective transformations within the butterfly subgroup at every tested scale.
 
 \textit{What we did not model.}
 Our simulations have several simplifications that could affect the relative topology ranking:
 \begin{itemize}
 \item \emph{Waveguide crossing loss.} Butterfly requires physical waveguide crossings for non-adjacent port connections (visible as dashed lines in Fig.~\ref{fig:schematics}c,d). At ${\sim}0.02$\,dB per crossing~\cite{nikdast2023}, this could partially offset butterfly's depth advantage. Quantifying this requires layout-level analysis specific to the target foundry and technology node.
-\item \emph{Wavelength dependence.} MZI splitting ratios vary with wavelength. This affects all topologies but penalizes deeper meshes more, likely reinforcing butterfly's advantage---though we have not modeled this.
+\item \emph{Wavelength dependence.} MZI splitting ratios vary with wavelength. This affects all topologies but penalizes deeper meshes more, likely reinforcing butterfly's advantage, though we have not modeled this.
 \item \emph{Coupler imbalance.} We model phase errors only. Directional coupler splitting ratio errors are an additional impairment that may affect topologies differently~\cite{marchesin2025}.
 \item \emph{Diamond and braid topologies.} Their path-balancing properties~\cite{shokraneh2020,marchesin2025} could improve robustness by equalizing loss across all input--output paths. These are important comparisons that we leave for future work.
 \end{itemize}
@@ -488,10 +488,10 @@ We encourage the community to contribute validated implementations of diamond, b
 \section{Conclusion}
 \label{sec:conclusion}
 
-We presented the first unified Pareto comparison of four MZI mesh topologies---Clements, Reck, butterfly/FFT, and SCF fractal---under identical training, insertion loss, and phase noise conditions.
+We presented the first unified Pareto comparison of four MZI mesh topologies (Clements, Reck, butterfly/FFT, and SCF fractal) under identical training, insertion loss, and phase noise conditions.
 Across 72 experiments spanning two datasets, four mesh sizes, three insertion loss levels, and noise-aware training, butterfly/FFT consistently dominates the Pareto front.
 At $N{=}16$, it achieves comparable accuracy to universal topologies at 15$\times$ lower hardware cost with 1.8$\times$ better noise robustness.
-This advantage is driven by its $O(\log N)$ optical depth and amplified by insertion loss---it grows with both mesh size and foundry impairments.
+This advantage is driven by its $O(\log N)$ optical depth and amplified by insertion loss, growing with both mesh size and foundry impairments.
 
 Training-time noise injection improves deep topologies but cannot compensate for the depth disadvantage: butterfly without noise-aware training outperforms Clements with it.
 Topology selection is more effective than training strategy for achieving robustness.
