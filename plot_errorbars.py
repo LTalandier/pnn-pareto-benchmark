@@ -114,9 +114,9 @@ def plot_pareto_errorbars(results, noise_sigma=0.0, loss_dB=0.2, save=True):
                      alpha=0.9, markeredgecolor='white', markeredgewidth=0.5)
 
         for c, a, s in zip(costs_mean, accs_mean, sizes):
-            ax.annotate(f'N={s}', (c, a), fontsize=7,
-                        textcoords='offset points', xytext=(6, 6),
-                        color=TOPOLOGY_COLORS[topo_name], alpha=0.7)
+            ax.annotate(f'N={s}', (c, a), fontsize=11, fontweight='bold',
+                        textcoords='offset points', xytext=(7, 7),
+                        color=TOPOLOGY_COLORS[topo_name], alpha=0.85)
 
         all_costs.extend(costs_mean)
         all_accs.extend(accs_mean)

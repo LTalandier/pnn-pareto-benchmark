@@ -104,9 +104,9 @@ def plot_pareto_front(results=None, noise_sigma=0.0, dataset=None,
 
         # Annotate with mesh size
         for c, a, s in zip(costs, accs, sizes):
-            ax.annotate(f'N={s}', (c, a), fontsize=7,
-                        textcoords='offset points', xytext=(5, 5),
-                        color=TOPOLOGY_COLORS[topo_name], alpha=0.7)
+            ax.annotate(f'N={s}', (c, a), fontsize=11, fontweight='bold',
+                        textcoords='offset points', xytext=(7, 7),
+                        color=TOPOLOGY_COLORS[topo_name], alpha=0.85)
 
         all_costs.extend(costs)
         all_accs.extend(accs)
