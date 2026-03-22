@@ -37,15 +37,16 @@ The framework and data are open-source for extending to additional topologies.
 \label{sec:intro}
 
 Photonic neural networks based on meshes of Mach--Zehnder interferometers implement matrix--vector multiplication in the optical domain, offering potential advantages in throughput and energy efficiency over electronic accelerators~\cite{shen2017,tsakyridis2024}.
-Multiple mesh topologies have been proposed: the Clements rectangular mesh~\cite{clements2016}, the Reck triangular decomposition~\cite{reck1994}, butterfly/FFT architectures~\cite{tian2022,feng2022}, diamond meshes~\cite{shokraneh2020}, braid meshes~\cite{marchesin2025}, and self-similar sine-cosine fractal (SCF) decompositions~\cite{basani2023}.
+Multiple mesh topologies have been proposed: the Clements rectangular mesh~\cite{clements2016}, the Reck triangular decomposition~\cite{reck1994}, butterfly/FFT architectures~\cite{tian2022,feng2022}, diamond meshes~\cite{shokraneh2020}, braid meshes~\cite{marchesin2025}, and sine-cosine fractal (SCF) decompositions~\cite{basani2023}.
 Each proposal demonstrates advantages using different metrics, noise models, and benchmarks, and no unified comparison exists under identical conditions.
 
 Existing comparisons are pairwise and incomplete.
 Fang~\textit{et al.}~\cite{fang2019} compare GridNet and FFTNet architectures only.
 Shokraneh~\textit{et al.}~\cite{shokraneh2020} evaluate Reck versus Diamond on insertion loss balancing without classification training.
 Basani~\textit{et al.}~\cite{basani2023} compare SCF, Reck, and Clements on matrix fidelity metrics rather than end-to-end classification.
-Nikdast~\textit{et al.}~\cite{nikdast2023} analyze loss and crosstalk for Clements, Reck, and Diamond but do not train networks.
+Shafiee~\textit{et al.}~\cite{shafiee2023} analyze loss and crosstalk for Clements, Reck, and Diamond but do not train networks.
 No study evaluates more than three topologies with trained classification, insertion loss applied per-MZI in the forward pass, and Monte Carlo noise analysis.
+Gu~\textit{et al.}~\cite{gu2022} and Jiang~\textit{et al.}~\cite{jiang2025} perform automated topology search within continuous supermesh parameterizations; our work instead compares established named topologies head-to-head under identical conditions.
 
 We present a unified benchmark of four topologies under identical physics, training, and evaluation conditions.
 We measure three axes simultaneously: classification accuracy, hardware cost (MZI count $\times$ optical depth), and noise robustness.
@@ -70,7 +71,9 @@ U(\theta, \phi) = \begin{pmatrix} e^{i\phi}\cos\theta & -\sin\theta \\ e^{i\phi}
 Phase noise is modeled as additive Gaussian perturbations $\theta \to \theta + \mathcal{N}(0,\sigma^2)$ and $\phi \to \phi + \mathcal{N}(0,\sigma^2)$ applied independently to each MZI, representing thermo-optic tuning errors typical of silicon photonic foundries ($\sigma \approx 0.01$--$0.1$\,rad)~\cite{bandyopadhyay2021}.
 
 Insertion loss is applied \emph{per MZI} in the forward pass: after each MZI, both output port amplitudes are attenuated by $\alpha = \sqrt{10^{-L_{\mathrm{dB}}/10}}$, where $L_{\mathrm{dB}}$ is the loss per MZI in dB.
-A typical value for advanced silicon photonic foundries is $L_{\mathrm{dB}} = 0.2$\,dB~\cite{nikdast2023}.
+A typical value for advanced silicon photonic foundries is $L_{\mathrm{dB}} = 0.2$\,dB~\cite{shafiee2023}.
+Note that Clements~\textit{et al.}~\cite{clements2016} report 0.2\,dB per beam splitter; since each MZI contains two beam splitters, our per-MZI loss figure represents an optimistic target assuming overall MZI-level optimization.
+Results at 0.3 and 0.5\,dB/MZI bracket the more conservative estimate.
 Signals traversing $d$ MZIs accumulate $d \times L_{\mathrm{dB}}$\,dB of loss in the optical path, making topology depth a first-order determinant of signal-to-noise ratio.
 Photodetection is modeled as square-law detection: intensity $I = |E|^2$.
 
@@ -307,6 +310,8 @@ Models are evaluated at seven phase noise levels: $\sigma \in \{0, 0.01, 0.02, 0
 For $\sigma > 0$, we run 30 Monte Carlo trials and report mean accuracy and standard deviation.
 The \textit{robustness ratio} is defined as the mean accuracy at $\sigma{=}0.2$\,rad divided by the clean accuracy ($\sigma{=}0$).
 \textit{Hardware cost} is defined as $\text{MZI count} \times \text{optical depth}$, a proxy for chip area and worst-case latency.
+This composite metric is a simplification; MZI count and optical depth have distinct physical implications (chip area versus accumulated loss).
+We verified that topology rankings are consistent when these axes are analyzed separately.
 Pareto optimality identifies non-dominated points across the accuracy--cost plane.
 
 
@@ -413,16 +418,15 @@ SCF Fractal & $84.7{\pm}0.9$ & $0.21$ & $82.0{\pm}0.4$ & $0.23$ & $79.7{\pm}0.9$
 
 \subsection{Noise-aware training}
 
-Table~\ref{tab:noiseaware} compares standard and noise-aware training for Clements and SCF Fractal at $N{=}16$ on vowel.
-Standard training results are averaged over 4 random seeds; noise-aware results are single runs.
-Noise-aware training (injecting $\sigma{=}0.05$ during training) improves robustness ratios: +35\% relative for Clements (from $0.208$ to $0.281$), +25\% for SCF Fractal (from $0.210$ to $0.263$).
-However, this comes at a steep cost in clean accuracy: $-$20.4\,pp for Clements (from $82.7 \pm 0.9$\% to 62.3\%) and $-$13.0\,pp for SCF Fractal (from $84.7 \pm 0.9$\% to 71.7\%).
+Table~\ref{tab:noiseaware} compares standard and noise-aware training for Clements and SCF Fractal at $N{=}16$ on vowel, both averaged over 4 random seeds.
+Noise-aware training (injecting $\sigma{=}0.05$ during training) improves robustness ratios: +35\% relative for Clements (from $0.208 \pm 0.004$ to $0.281 \pm 0.016$), +25\% for SCF Fractal (from $0.210 \pm 0.013$ to $0.262 \pm 0.006$).
+However, this comes at a cost in clean accuracy: $-$16.9\,pp for Clements (from $82.7 \pm 0.9$\% to $65.8 \pm 3.3$\%) and $-$13.4\,pp for SCF Fractal (from $84.7 \pm 0.9$\% to $71.3 \pm 1.9$\%).
 
-Notably, butterfly \emph{without} noise-aware training achieves better robustness ($0.377 \pm 0.032$) than Clements \emph{with} it (0.281).
+Notably, butterfly \emph{without} noise-aware training achieves better robustness ($0.377 \pm 0.032$) than Clements \emph{with} it ($0.281 \pm 0.016$).
 In this regime, topology choice has a larger effect on robustness than training strategy.
 
 \begin{table}[t]
-\caption{Standard versus noise-aware training at $N{=}16$, vowel, 0.2\,dB/MZI. Standard training values are mean $\pm$ std over 4 seeds. Noise-aware training injects $\sigma{=}0.05$ during training (single run).}
+\caption{Standard versus noise-aware training at $N{=}16$, vowel, 0.2\,dB/MZI. All values are mean $\pm$ std over 4 random seeds. Noise-aware training injects $\sigma{=}0.05$ during training.}
 \label{tab:noiseaware}
 \begin{ruledtabular}
 \begin{tabular}{lccccc}
@@ -430,10 +434,10 @@ In this regime, topology choice has a larger effect on robustness than training 
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
 Topology & Acc\,(\%) & Rob & Acc\,(\%) & Rob \\
 \hline
-Clements    & $82.7 \pm 0.9$ & $0.208$ & 62.3 & 0.281 \\
-SCF Fractal & $84.7 \pm 0.9$ & $0.210$ & 71.7 & 0.263 \\
+Clements    & $82.7 \pm 0.9$ & $0.208 \pm 0.004$ & $65.8 \pm 3.3$ & $0.281 \pm 0.016$ \\
+SCF Fractal & $84.7 \pm 0.9$ & $0.210 \pm 0.013$ & $71.3 \pm 1.9$ & $0.262 \pm 0.006$ \\
 \hline
-Butterfly (std) & $84.3 \pm 1.7$ & $0.377$ & \multicolumn{2}{c}{---} \\
+Butterfly (std) & $84.3 \pm 1.7$ & $0.377 \pm 0.032$ & \multicolumn{2}{c}{---} \\
 \end{tabular}
 \end{ruledtabular}
 \end{table}
@@ -466,7 +470,7 @@ Our results show that classification does not require universality: the network 
 \textit{What we did not model.}
 Our simulations have several simplifications that could affect the relative topology ranking:
 \begin{itemize}
-\item \emph{Waveguide crossing loss.} Butterfly requires physical waveguide crossings for non-adjacent port connections (visible as dashed lines in Fig.~\ref{fig:schematics}c,d). At ${\sim}0.02$\,dB per crossing~\cite{nikdast2023}, this could partially offset butterfly's depth advantage. Quantifying this requires layout-level analysis specific to the target foundry and technology node.
+\item \emph{Waveguide crossing loss.} Butterfly requires physical waveguide crossings for non-adjacent port connections (visible as dashed lines in Fig.~\ref{fig:schematics}c,d). At ${\sim}0.02$\,dB per crossing~\cite{shafiee2023}, this could partially offset butterfly's depth advantage. Quantifying this requires layout-level analysis specific to the target foundry and technology node.
 \item \emph{Wavelength dependence.} MZI splitting ratios vary with wavelength. This affects all topologies but penalizes deeper meshes more, likely reinforcing butterfly's advantage, though we have not modeled this.
 \item \emph{Coupler imbalance.} We model phase errors only. Directional coupler splitting ratio errors are an additional impairment that may affect topologies differently~\cite{marchesin2025}.
 \item \emph{Diamond and braid topologies.} Their path-balancing properties~\cite{shokraneh2020,marchesin2025} could improve robustness by equalizing loss across all input--output paths. These are important comparisons that we leave for future work.
@@ -556,8 +560,8 @@ M.~Y.~S.~Fang, S.~Manipatruni, C.~Wierzynski, A.~Khosrowshahi, and M.~R.~DeWeese
 \textit{Design of optical neural networks with component imprecisions},
 Opt.\ Express \textbf{27}, 14009 (2019).
 
-\bibitem{nikdast2023}
-M.~Nikdast, G.~Pasricha, and S.~Abadal,
+\bibitem{shafiee2023}
+A.~Shafiee, M.~Nikdast, S.~Pasricha, and S.~Abadal,
 \textit{Crosstalk-aware design exploration for silicon photonic neural networks},
 arXiv:2308.03249 (2023).
 
@@ -595,6 +599,11 @@ APL Photonics \textbf{9}, 010902 (2024).
 J.~Gu, Z.~Zhao, C.~Feng, M.~Liu, R.~T.~Chen, and D.~Z.~Pan,
 \textit{ADEPT: automatic differentiable design of photonic tensor cores},
 in Proc.\ DAC (2022).
+
+\bibitem{jiang2025}
+W.~Jiang, J.~Gu, B.~Bai, R.~T.~Chen, and D.~Z.~Pan,
+\textit{ADEPT-Z: zero-shot automated circuit topology search for photonic tensor cores},
+in Proc.\ ASP-DAC (2025); arXiv:2410.01313.
 
 \end{thebibliography}
 
