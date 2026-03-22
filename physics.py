@@ -98,19 +98,36 @@ def reck_topology(N):
     """
     Reck triangular mesh.
     N(N-1)/2 MZIs, depth 2N-3. Universal.
-    Diagonal elimination pattern — less parallelism than Clements.
+    Triangular elimination: each column eliminates one matrix element.
+    Column k applies one MZI; columns targeting non-overlapping ports
+    can be merged into the same layer.
     """
+    # Generate the sequence of (port_i, port_j) for each column
+    # Reck eliminates column-by-column of the unitary matrix.
+    # For an NxN unitary, we eliminate elements in order:
+    #   row N-1 cols 0..N-2, then row N-2 cols 0..N-3, etc.
+    # Each elimination uses one MZI on adjacent ports.
+    mzi_sequence = []
+    for col in range(N - 1):
+        for row in range(N - 1, col, -1):
+            mzi_sequence.append((row - 1, row))
+
+    # Pack into layers: MZIs on non-overlapping ports go in same layer
     layers = []
-    for diag in range(N - 1):
-        # Each diagonal eliminates one off-diagonal element
-        # MZIs on this diagonal can partially parallelize
-        layer = []
-        for row in range(N - 1 - diag):
-            port = row
-            layer.append((port, port + 1))
-        # In Reck, within a diagonal, MZIs are sequential because
-        # each depends on the prior. Split into individual layers.
-        for pair in layer:
+    for pair in mzi_sequence:
+        placed = False
+        for layer in layers:
+            # Check if this pair conflicts with any existing pair in layer
+            conflict = False
+            for existing in layer:
+                if pair[0] in existing or pair[1] in existing:
+                    conflict = True
+                    break
+            if not conflict:
+                layer.append(pair)
+                placed = True
+                break
+        if not placed:
             layers.append([pair])
     return layers
 
@@ -139,66 +156,11 @@ def butterfly_topology(N):
     return layers
 
 
-def diamond_topology(N):
-    """
-    Diamond mesh (Shokraneh et al., 2020).
-    ~N(N-1)/2 MZIs. All input-output paths traverse similar
-    numbers of MZIs, giving balanced insertion loss.
 
-    Implementation: interleaved forward and reverse sweeps
-    creating a diamond-shaped pattern.
-    """
-    layers = []
-    # Forward sweep: bottom-up pairing
-    for offset in range(N - 1):
-        layer = []
-        start = offset % 2
-        for i in range(start, N - 1, 2):
-            layer.append((i, i + 1))
-        if layer:
-            layers.append(layer)
-
-    # Reverse sweep: ensures path balancing
-    for offset in range(N - 2, -1, -1):
-        layer = []
-        start = offset % 2
-        for i in range(start, N - 1, 2):
-            layer.append((i, i + 1))
-        if layer:
-            layers.append(layer)
-    return layers
-
-
-def braid_topology(N):
-    """
-    Braided mesh (Marchesin et al., Optics Express, January 2025).
-    All optical paths traverse exactly the same number of passive
-    components. Superior robustness to insertion loss imbalance.
-
-    Implementation: systematic interleaving that ensures every
-    path from input k to output l crosses the same total number
-    of beam splitters, regardless of k and l.
-    The pattern uses N complete rounds of alternating even/odd
-    layers, with a specific ordering that balances path lengths.
-    """
-    layers = []
-    n_rounds = N  # N rounds for full balancing
-    for r in range(n_rounds):
-        # Even layer
-        layer_even = []
-        for i in range(0, N - 1, 2):
-            layer_even.append((i, i + 1))
-        if layer_even:
-            layers.append(layer_even)
-
-        # Odd layer
-        layer_odd = []
-        for i in range(1, N - 1, 2):
-            layer_odd.append((i, i + 1))
-        if layer_odd:
-            layers.append(layer_odd)
-
-    return layers
+# Diamond and Braid topologies removed — correct implementations
+# require non-trivial wiring patterns from the original papers
+# (Shokraneh et al. 2020, Marchesin et al. 2025).
+# To be added after paper review.
 
 
 def scf_fractal_topology(N):
@@ -272,8 +234,6 @@ TOPOLOGIES = {
     'clements': clements_topology,
     'reck': reck_topology,
     'butterfly': butterfly_topology,
-    'diamond': diamond_topology,
-    'braid': braid_topology,
     'scf_fractal': scf_fractal_topology,
 }
 
