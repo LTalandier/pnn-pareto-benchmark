@@ -25,7 +25,7 @@ Photonic neural networks (PNNs) based on Mach--Zehnder interferometer (MZI) mesh
 No unified comparison under identical conditions exists.
 We present a Pareto benchmark of four topologies (Clements, Reck, butterfly/FFT, and SCF fractal), evaluated with physically meaningful per-MZI insertion loss in the forward pass and Monte Carlo phase noise analysis (7 noise levels, 30 trials each) on two classification datasets.
 Butterfly/FFT dominates the Pareto front at all tested scales ($N{=}4$ to 32): at $N{=}16$ it achieves $84.3 \pm 1.7$\% accuracy (over 4 seeds) at 15$\times$ lower hardware cost than Clements, with 1.8$\times$ better noise robustness.
-This advantage grows with insertion loss: at 0.5\,dB/MZI, butterfly drops only 2.7 percentage points (averaged over 4 seeds) while Clements drops 4.6.
+This advantage grows with insertion loss: at 0.5\,dB/MZI, butterfly drops only 2.6 percentage points (averaged over 4 seeds) while Clements drops 4.6.
 Noise-aware training improves deep topologies but cannot close the depth gap: butterfly \emph{without} noise-aware training outperforms Clements \emph{with} it.
 The framework and data are open-source for extending to additional topologies.
 \end{abstract}
@@ -36,7 +36,7 @@ The framework and data are open-source for extending to additional topologies.
 \section{Introduction}
 \label{sec:intro}
 
-Photonic neural networks based on meshes of Mach--Zehnder interferometers implement matrix--vector multiplication in the optical domain, offering potential advantages in throughput and energy efficiency over electronic accelerators~\cite{shen2017,tsakyridis2024}.
+Photonic neural networks based on meshes of Mach--Zehnder interferometers implement matrix--vector multiplication in the optical domain, offering potential advantages in throughput and energy efficiency over electronic accelerators~\cite{shen2017,tsakyridis2024,bandyopadhyay2024}.
 Multiple mesh topologies have been proposed: the Clements rectangular mesh~\cite{clements2016}, the Reck triangular decomposition~\cite{reck1994}, butterfly/FFT architectures~\cite{tian2022,feng2022}, diamond meshes~\cite{shokraneh2020}, braid meshes~\cite{marchesin2025}, and sine-cosine fractal (SCF) decompositions~\cite{basani2023}.
 Each proposal demonstrates advantages using different metrics, noise models, and benchmarks, and no unified comparison exists under identical conditions.
 
@@ -474,6 +474,7 @@ Our simulations have several simplifications that could affect the relative topo
 \item \emph{Wavelength dependence.} MZI splitting ratios vary with wavelength. This affects all topologies but penalizes deeper meshes more, likely reinforcing butterfly's advantage, though we have not modeled this.
 \item \emph{Coupler imbalance.} We model phase errors only. Directional coupler splitting ratio errors are an additional impairment that may affect topologies differently~\cite{marchesin2025}.
 \item \emph{Diamond and braid topologies.} Their path-balancing properties~\cite{shokraneh2020,marchesin2025} could improve robustness by equalizing loss across all input--output paths. These are important comparisons that we leave for future work.
+\item \emph{Fault-tolerant MZI designs.} Hamerly~\textit{et al.}~\cite{hamerly2022nat} demonstrated 3-splitter MZI architectures where matrix fidelity does not degrade with mesh size. Such building blocks could fundamentally alter the depth--robustness tradeoffs reported here, and their interaction with different mesh topologies is an important open question.
 \end{itemize}
 
 \textit{Practical recommendations.}
@@ -535,7 +536,7 @@ Computations were performed on a GPU cloud instance (Vast.ai).
 
 \bibliography{references}
 
-\begin{thebibliography}{20}
+\begin{thebibliography}{21}
 
 \bibitem{shen2017}
 Y.~Shen, N.~C.~Harris, S.~Skirlo, M.~Prabhu, T.~Baehr-Jones, M.~Hochberg, X.~Sun, S.~Zhao, H.~Larochelle, D.~Englund, and M.~Solja\v{c}i\'{c},
@@ -626,6 +627,16 @@ in Proc.\ DAC (2022).
 W.~Jiang, J.~Gu, B.~Bai, R.~T.~Chen, and D.~Z.~Pan,
 \textit{ADEPT-Z: zero-shot automated circuit topology search for photonic tensor cores},
 in Proc.\ ASP-DAC (2025); arXiv:2410.01313.
+
+\bibitem{hamerly2022nat}
+R.~Hamerly, S.~Bandyopadhyay, and D.~Englund,
+\textit{Asymptotically fault-tolerant programmable photonics},
+Nat.\ Commun.\ \textbf{13}, 6831 (2022).
+
+\bibitem{bandyopadhyay2024}
+S.~Bandyopadhyay, A.~Sludds, S.~Krastanov, R.~Hamerly, N.~Harris, D.~Bunandar, M.~Streshinsky, M.~Hochberg, and D.~Englund,
+\textit{Single-chip photonic deep neural network with forward-only training},
+Nat.\ Photon.\ \textbf{18}, 1335 (2024).
 
 \end{thebibliography}
 
