@@ -6,7 +6,7 @@ Systematic Pareto comparison of MZI mesh topologies for photonic neural networks
 
 ## How this was made
 
-This project was built as an **autoresearch** experiment, inspired by Andrej Karpathy's concept of [LLM-driven research workflows](https://x.com/kaborka/status/1902867946498691094) and the broader move toward AI agents that can run experiments end-to-end. The idea: a human researcher defines the research question and constraints, then an AI agent handles the implementation, execution, and writing.
+This project was built as an **autoresearch** experiment, inspired by Andrej Karpathy's concept of [LLM-driven research workflows](https://github.com/karpathy/autoresearch) and the broader move toward AI agents that can run experiments end-to-end. The idea: a human researcher defines the research question and constraints, then an AI agent handles the implementation, execution, and writing.
 
 Concretely, a human researcher (Lucas Talandier) defined the research question, physics model, and evaluation protocol in a structured prompt file (`pnn-pareto-prompt.md`), then an AI agent (Claude, via [Claude Code](https://docs.anthropic.com/en/docs/claude-code)) autonomously:
 
@@ -95,9 +95,9 @@ Then configure `train.py` with `TOPOLOGY = 'my_topology'` and run.
 
 ## Related work and inspiration
 
-- Andrej Karpathy's [discussion on AI-assisted research](https://x.com/kaborka/status/1902867946498691094) and the concept of "vibe coding" applied to scientific workflows
+- Andrej Karpathy's [discussion on AI-assisted research](https://github.com/karpathy/autoresearch) and the concept of "vibe coding" applied to scientific workflows
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (Anthropic) — the agent harness used to run this project
-- [AISI Inspect](https://github.com/UKGovernmentBEIS/inspect_ai), [OpenHands](https://github.com/All-Hands-AI/OpenHands) — related agent frameworks for automated research
+
 
 ## License
 
