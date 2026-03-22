@@ -2,7 +2,7 @@
 
 Systematic Pareto comparison of MZI mesh topologies for photonic neural networks, evaluated across accuracy, hardware cost, and fabrication noise robustness.
 
-**Paper**: "Quantitative Pareto comparison of MZI mesh topologies for photonic neural networks under fabrication impairments" (Talandier, 2026) — [arXiv link forthcoming]
+**Paper**: "Quantitative Pareto comparison of MZI mesh topologies for photonic neural networks under fabrication impairments" (Talandier, 2026).
 
 ## How this was made
 
@@ -28,7 +28,7 @@ The human's role was to: define the research scope, verify topology implementati
 - **GPU vs CPU decision**: the agent initially ran on GPU, which was slower due to kernel launch overhead on small sequential MZI operations. The human identified this and switched to CPU.
 - **Statistical validity**: the human flagged that single-run results were insufficient and directed the multi-seed experiments.
 - **Reference verification**: 5 of 17 references had incorrect author lists or titles in the initial draft. An independent check was needed.
-- **Tone and framing**: AI-written text required editing to remove characteristic patterns (em dashes, intensifiers, repetitive claims).
+- **Tone and framing**: AI-written text required editing.
 
 ### Reproducibility
 
