@@ -23,8 +23,8 @@
 Photonic neural networks (PNNs) based on Mach--Zehnder interferometer (MZI) meshes can implement matrix--vector multiplication at the speed of light, but choosing among proposed mesh topologies requires navigating tradeoffs between accuracy, hardware cost, and robustness to fabrication impairments.
 No unified comparison under identical conditions exists.
 We present a Pareto benchmark of four topologies---Clements, Reck, butterfly/FFT, and SCF fractal---evaluated with physically meaningful per-MZI insertion loss in the forward pass and Monte Carlo phase noise analysis (7 noise levels, 30 trials each) on two classification datasets.
-Butterfly/FFT dominates the Pareto front at all tested scales ($N{=}4$ to 32): at $N{=}16$ it achieves 83.8\% accuracy at 15$\times$ lower hardware cost than Clements, with 1.6$\times$ better noise robustness.
-This advantage grows with insertion loss---at 0.5\,dB/MZI, butterfly drops only 2.3 percentage points while Clements drops 5.4.
+Butterfly/FFT dominates the Pareto front at all tested scales ($N{=}4$ to 32): at $N{=}16$ it achieves $84.3 \pm 1.7$\% accuracy (over 4 seeds) at 15$\times$ lower hardware cost than Clements, with 1.8$\times$ better noise robustness.
+This advantage grows with insertion loss---at 0.5\,dB/MZI, butterfly drops only 2.7 percentage points (averaged over 4 seeds) while Clements drops 4.6.
 Noise-aware training improves deep topologies but cannot close the depth gap: butterfly \emph{without} noise-aware training outperforms Clements \emph{with} it.
 The framework and data are open-source for extending to additional topologies.
 \end{abstract}
@@ -326,23 +326,23 @@ Figure~\ref{fig:pareto} shows accuracy versus hardware cost for all topologies a
 Table~\ref{tab:n16results} reports the $N{=}16$ results in detail.
 
 \begin{table}[b]
-\caption{Performance at $N{=}16$ on vowel dataset (0.2\,dB/MZI loss). Accuracy at $\sigma{=}0.1$ and robustness ratio (accuracy at $\sigma{=}0.2$ / clean accuracy).}
+\caption{Performance at $N{=}16$ on vowel dataset (0.2\,dB/MZI loss), averaged over 4 training runs with different random seeds. Robustness ratio defined as accuracy at $\sigma{=}0.2$ divided by clean accuracy.}
 \label{tab:n16results}
 \begin{ruledtabular}
 \begin{tabular}{lccccc}
 Topology & MZIs & Depth & Cost & Acc.\,(\%) & Robust.\ \\
 \hline
-Clements    & 120 & 16 & 1920 & 81.8 & 0.209 \\
-Reck        & 120 & 29 & 3480 & 84.5 & 0.266 \\
-Butterfly   &  32 &  4 &  128 & 83.8 & 0.343 \\
-SCF Fractal & 120 & 15 & 1800 & 84.2 & 0.209 \\
+Clements    & 120 & 16 & 1920 & $82.7 \pm 0.9$ & $0.208 \pm 0.004$ \\
+Reck        & 120 & 29 & 3480 & $83.6 \pm 2.3$ & $0.252 \pm 0.029$ \\
+Butterfly   &  32 &  4 &  128 & $84.3 \pm 1.7$ & $0.377 \pm 0.032$ \\
+SCF Fractal & 120 & 15 & 1800 & $84.7 \pm 0.9$ & $0.210 \pm 0.013$ \\
 \end{tabular}
 \end{ruledtabular}
 \end{table}
 
 Butterfly occupies the Pareto-optimal lower-left region (low cost, competitive accuracy) at every noise level.
-At $N{=}16$ on vowel, butterfly achieves 83.8\% accuracy at hardware cost 128, compared to Clements at 81.8\% and cost 1920---a 15$\times$ cost reduction with comparable accuracy.
-On Fashion-MNIST, the pattern is similar: butterfly reaches 79.7\% at cost 128 versus Clements at 78.0\% at cost 1920.
+At $N{=}16$ on vowel, butterfly achieves $84.3 \pm 1.7$\% accuracy at hardware cost 128, compared to Clements at $82.7 \pm 0.9$\% and cost 1920---a 15$\times$ cost reduction with comparable accuracy.
+On Fashion-MNIST, the pattern is similar: butterfly reaches 79.7\% at cost~128 versus Clements at 78.0\% at cost~1920.
 At $N{=}32$ the gap widens further: butterfly achieves 85.5\% at cost 400, versus Clements at 82.2\% at cost 15{,}872 (40$\times$).
 
 Among universal topologies, Reck achieves the highest clean accuracy at $N{=}16$ (84.5\% vowel, 79.0\% fmnist) but at the highest hardware cost (3480).
@@ -365,16 +365,16 @@ SCF Fractal matches Clements' accuracy at slightly lower depth but does not reac
 \subsection{Robustness versus depth}
 
 Figure~\ref{fig:robustness} shows accuracy versus phase noise $\sigma$ for all topologies at $N{=}16$.
-There is a clear monotonic relationship between optical depth and noise sensitivity.
-Butterfly (depth~4) retains 34\% of its clean accuracy at $\sigma{=}0.2$ on vowel and 43\% on Fashion-MNIST.
-Clements (depth~16) and SCF Fractal (depth~15) retain only 21--25\%.
+There is a clear relationship between optical depth and noise sensitivity, though not perfectly monotonic.
+Butterfly (depth~4) retains $37.7 \pm 3.2$\% of its clean accuracy at $\sigma{=}0.2$ on vowel (averaged over 4 seeds) and 43\% on Fashion-MNIST.
+Clements (depth~16) and SCF Fractal (depth~15) retain only $20.8 \pm 0.4$\% and $21.0 \pm 1.3$\%, respectively.
 
-Reck presents an anomaly: despite having the deepest topology (depth~29), it achieves robustness of 0.266 on vowel---better than Clements (0.209).
-We attribute this to Reck's triangular structure, in which some output ports are reached through fewer MZIs than the maximum depth, effectively creating a distribution of path lengths rather than a uniform depth.
-This deserves further investigation.
+Reck presents a notable result: despite having the deepest topology (depth~29), it achieves robustness of $0.252 \pm 0.029$---consistently better than Clements ($0.208 \pm 0.004$) across all 4 training seeds.
+We attribute this to Reck's triangular structure, in which some output ports are reached through significantly fewer MZIs than the maximum depth, effectively creating a distribution of path lengths rather than a uniform depth.
+This suggests that \emph{maximum depth} alone does not fully determine robustness; the distribution of path lengths matters.
 
 SCF Fractal's theoretical $O(N\sigma^4)$ error scaling advantage~\cite{basani2023} is not apparent in our results.
-At $N{=}16$, SCF (depth~15) and Clements (depth~16) show essentially identical robustness (0.209 vs.\ 0.209).
+At $N{=}16$, SCF (depth~15) and Clements (depth~16) show essentially identical robustness ($0.210 \pm 0.013$ vs.\ $0.208 \pm 0.004$).
 The $\sigma^4$ advantage likely manifests at very small $\sigma$ where the depth-driven $\sigma^2$ effect does not yet dominate; at the noise levels relevant to current foundries ($\sigma > 0.01$), depth is the primary determinant.
 
 \begin{figure}[t]
@@ -387,13 +387,13 @@ The $\sigma^4$ advantage likely manifests at very small $\sigma$ where the depth
 
 \subsection{Insertion loss sensitivity}
 
-Table~\ref{tab:loss} shows the effect of increasing per-MZI insertion loss from 0.2 to 0.5\,dB at $N{=}16$ on vowel.
-Butterfly is the most loss-tolerant topology: its clean accuracy drops only 2.3 percentage points (pp) from 0.2 to 0.5\,dB/MZI, because signals traverse only 4 MZIs.
-Clements drops 5.4\,pp and SCF Fractal drops 5.7\,pp, as their signals traverse 15--16 MZIs.
+Table~\ref{tab:loss} shows the effect of increasing per-MZI insertion loss from 0.2 to 0.5\,dB at $N{=}16$ on vowel, averaged over 4 random seeds.
+Butterfly is the most loss-tolerant topology: its mean clean accuracy drops only 2.6\,pp from 0.2 to 0.5\,dB/MZI (from $84.3 \pm 1.7$\% to $81.7 \pm 0.4$\%), because signals traverse only 4 MZIs.
+Clements drops 4.6\,pp (from $82.7 \pm 0.9$\% to $78.1 \pm 1.5$\%) and SCF Fractal drops 5.0\,pp, as their signals traverse 15--16 MZIs.
 The robustness ratio remains largely stable across loss levels for all topologies, indicating that the topology ranking does not change with foundry quality---butterfly's advantage simply grows in magnitude.
 
 \begin{table}[t]
-\caption{Insertion loss sensitivity at $N{=}16$, vowel dataset. Clean accuracy (\%) and robustness ratio at three loss levels.}
+\caption{Insertion loss sensitivity at $N{=}16$, vowel dataset, averaged over 4 random seeds. Clean accuracy (\%) and robustness ratio at three loss levels. Uncertainties are one standard deviation.}
 \label{tab:loss}
 \begin{ruledtabular}
 \begin{tabular}{lcccccc}
@@ -401,10 +401,10 @@ The robustness ratio remains largely stable across loss levels for all topologie
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
 Topology & Acc & Rob & Acc & Rob & Acc & Rob \\
 \hline
-Clements    & 81.8 & 0.21 & 84.5 & 0.21 & 76.4 & 0.22 \\
-Reck        & 84.5 & 0.27 & 77.8 & 0.29 & 81.5 & 0.32 \\
-Butterfly   & 83.8 & 0.34 & 85.5 & 0.36 & 81.5 & 0.38 \\
-SCF Fractal & 84.2 & 0.21 & 82.5 & 0.21 & 78.5 & 0.22 \\
+Clements    & $82.7{\pm}0.9$ & $0.21$ & $81.7{\pm}2.7$ & $0.22$ & $78.1{\pm}1.5$ & $0.23$ \\
+Reck        & $83.6{\pm}2.3$ & $0.25$ & $80.6{\pm}1.6$ & $0.28$ & $79.3{\pm}2.7$ & $0.30$ \\
+Butterfly   & $84.3{\pm}1.7$ & $0.38$ & $84.5{\pm}1.0$ & $0.38$ & $81.7{\pm}0.4$ & $0.40$ \\
+SCF Fractal & $84.7{\pm}0.9$ & $0.21$ & $82.0{\pm}0.4$ & $0.23$ & $79.7{\pm}0.9$ & $0.22$ \\
 \end{tabular}
 \end{ruledtabular}
 \end{table}
@@ -413,14 +413,15 @@ SCF Fractal & 84.2 & 0.21 & 82.5 & 0.21 & 78.5 & 0.22 \\
 \subsection{Noise-aware training}
 
 Table~\ref{tab:noiseaware} compares standard and noise-aware training for Clements and SCF Fractal at $N{=}16$ on vowel.
-Noise-aware training (injecting $\sigma{=}0.05$ during training) improves robustness ratios: +34\% relative improvement for Clements, +26\% for SCF Fractal.
-However, this comes at a steep cost in clean accuracy: $-$19.5\,pp for Clements and $-$12.5\,pp for SCF Fractal.
+Standard training results are averaged over 4 random seeds; noise-aware results are single runs.
+Noise-aware training (injecting $\sigma{=}0.05$ during training) improves robustness ratios: +35\% relative for Clements (from $0.208$ to $0.281$), +25\% for SCF Fractal (from $0.210$ to $0.263$).
+However, this comes at a steep cost in clean accuracy: $-$20.4\,pp for Clements (from $82.7 \pm 0.9$\% to 62.3\%) and $-$13.0\,pp for SCF Fractal (from $84.7 \pm 0.9$\% to 71.7\%).
 
-Critically, butterfly \emph{without} noise-aware training achieves better robustness (0.343) than Clements \emph{with} it (0.281).
+Critically, butterfly \emph{without} noise-aware training achieves better robustness ($0.377 \pm 0.032$) than Clements \emph{with} it (0.281).
 This demonstrates that \textbf{topology selection is more effective than training strategy for achieving noise robustness}.
 
 \begin{table}[t]
-\caption{Standard versus noise-aware training at $N{=}16$, vowel, 0.2\,dB/MZI. Noise-aware training injects $\sigma{=}0.05$ during training.}
+\caption{Standard versus noise-aware training at $N{=}16$, vowel, 0.2\,dB/MZI. Standard training values are mean $\pm$ std over 4 seeds. Noise-aware training injects $\sigma{=}0.05$ during training (single run).}
 \label{tab:noiseaware}
 \begin{ruledtabular}
 \begin{tabular}{lccccc}
@@ -428,10 +429,10 @@ This demonstrates that \textbf{topology selection is more effective than trainin
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
 Topology & Acc\,(\%) & Rob & Acc\,(\%) & Rob \\
 \hline
-Clements    & 81.8 & 0.209 & 62.3 & 0.281 \\
-SCF Fractal & 84.2 & 0.209 & 71.7 & 0.263 \\
+Clements    & $82.7 \pm 0.9$ & $0.208$ & 62.3 & 0.281 \\
+SCF Fractal & $84.7 \pm 0.9$ & $0.210$ & 71.7 & 0.263 \\
 \hline
-Butterfly (std) & 83.8 & 0.343 & \multicolumn{2}{c}{---} \\
+Butterfly (std) & $84.3 \pm 1.7$ & $0.377$ & \multicolumn{2}{c}{---} \\
 \end{tabular}
 \end{ruledtabular}
 \end{table}
@@ -487,8 +488,8 @@ We encourage the community to contribute validated implementations of diamond, b
 \label{sec:conclusion}
 
 We presented the first unified Pareto comparison of four MZI mesh topologies---Clements, Reck, butterfly/FFT, and SCF fractal---under identical training, insertion loss, and phase noise conditions.
-Across 36 experiments spanning two datasets, four mesh sizes, three insertion loss levels, and noise-aware training, butterfly/FFT consistently dominates the Pareto front.
-At $N{=}16$, it achieves comparable accuracy to universal topologies at 15$\times$ lower hardware cost with 1.6$\times$ better noise robustness.
+Across 72 experiments spanning two datasets, four mesh sizes, three insertion loss levels, and noise-aware training, butterfly/FFT consistently dominates the Pareto front.
+At $N{=}16$, it achieves comparable accuracy to universal topologies at 15$\times$ lower hardware cost with 1.8$\times$ better noise robustness.
 This advantage is driven by its $O(\log N)$ optical depth and amplified by insertion loss---it grows with both mesh size and foundry impairments.
 
 Training-time noise injection improves deep topologies but cannot compensate for the depth disadvantage: butterfly without noise-aware training outperforms Clements with it.
