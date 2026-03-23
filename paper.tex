@@ -44,7 +44,7 @@ Existing comparisons are pairwise and incomplete.
 Fang~\textit{et al.}~\cite{fang2019} compare GridNet and FFTNet architectures only.
 Shokraneh~\textit{et al.}~\cite{shokraneh2020} evaluate Reck versus Diamond on insertion loss balancing without classification training.
 Basani~\textit{et al.}~\cite{basani2023} compare SCF, Reck, and Clements on matrix fidelity metrics rather than end-to-end classification.
-Shafiee~\textit{et al.}~\cite{shafiee2023} analyze loss and crosstalk for Clements, Reck, and Diamond but do not train networks.
+Shafiee~\textit{et al.}~\cite{shafiee2024} analyze loss and crosstalk for Clements, Reck, and Diamond but do not train networks.
 No study evaluates more than three topologies with trained classification, insertion loss applied per-MZI in the forward pass, and Monte Carlo noise analysis.
 Gu~\textit{et al.}~\cite{gu2022} and Jiang~\textit{et al.}~\cite{jiang2025} perform automated topology search within continuous supermesh parameterizations; our work instead compares established named topologies head-to-head under identical conditions.
 
@@ -71,7 +71,7 @@ U(\theta, \phi) = \begin{pmatrix} e^{i\phi}\cos\theta & -\sin\theta \\ e^{i\phi}
 Phase noise is modeled as additive Gaussian perturbations $\theta \to \theta + \mathcal{N}(0,\sigma^2)$ and $\phi \to \phi + \mathcal{N}(0,\sigma^2)$ applied independently to each MZI, representing thermo-optic tuning errors typical of silicon photonic foundries ($\sigma \approx 0.01$--$0.1$\,rad)~\cite{bandyopadhyay2021}.
 
 Insertion loss is applied \emph{per MZI} in the forward pass: after each MZI, both output port amplitudes are attenuated by $\alpha = \sqrt{10^{-L_{\mathrm{dB}}/10}}$, where $L_{\mathrm{dB}}$ is the loss per MZI in dB.
-A typical value for advanced silicon photonic foundries is $L_{\mathrm{dB}} = 0.2$\,dB~\cite{shafiee2023}.
+A typical value for advanced silicon photonic foundries is $L_{\mathrm{dB}} = 0.2$\,dB~\cite{shafiee2024}.
 Note that Clements~\textit{et al.}~\cite{clements2016} report 0.2\,dB per beam splitter; since each MZI contains two beam splitters, our per-MZI loss figure represents an optimistic target assuming overall MZI-level optimization.
 Results at 0.3 and 0.5\,dB/MZI bracket the more conservative estimate.
 Signals traversing $d$ MZIs accumulate $d \times L_{\mathrm{dB}}$\,dB of loss in the optical path, making topology depth a first-order determinant of signal-to-noise ratio.
@@ -366,7 +366,7 @@ SCF Fractal ($84.7 \pm 0.9$\%) slightly outperforms Clements ($82.7 \pm 0.9$\%) 
 \includegraphics[width=0.48\textwidth]{results/figures/pareto_sigma0.00_fmnist.png}%
 \hfill
 \includegraphics[width=0.48\textwidth]{results/figures/pareto_sigma0.10_fmnist.png}
-\caption{Pareto front: accuracy versus hardware cost (MZIs\,$\times$\,depth) for all topologies and mesh sizes. Left column: clean ($\sigma{=}0$). Right column: noisy ($\sigma{=}0.1$\,rad). Top row: vowel dataset (mean $\pm$ std over 4 seeds). Bottom row: Fashion-MNIST (mean $\pm$ std over 3--4 seeds at $N{=}4,8$; single run at $N{=}16$). Dashed line indicates the Pareto front computed from mean values.}
+\caption{Pareto front: accuracy versus hardware cost (MZIs\,$\times$\,depth) for all topologies and mesh sizes. Left column: clean ($\sigma{=}0$). Right column: noisy ($\sigma{=}0.1$\,rad). Top row: vowel dataset (mean $\pm$ std over 4 seeds). Bottom row: Fashion-MNIST (mean $\pm$ std over 3--4 seeds). Dashed line indicates the Pareto front computed from mean values.}
 \label{fig:pareto}
 \end{figure*}
 
@@ -467,7 +467,8 @@ Butterfly matches or exceeds universal topologies at $N \geq 8$ despite its non-
 \textit{Why butterfly wins, and when it might not.}
 Butterfly's Pareto dominance derives from its $O(\log N)$ depth.
 Depth drives both phase noise accumulation and insertion loss, making it the primary determinant of robustness in realistic photonic systems.
-However, butterfly implements only a strict subgroup of $U(N)$: for applications requiring arbitrary unitary transformations (quantum computing, optical channel estimation), universal topologies like Clements remain necessary.
+However, butterfly implements only a strict subgroup of $U(N)$: for applications requiring arbitrary unitary transformations (quantum computing, optical channel estimation), universal topologies remain necessary.
+Reduced-depth universal architectures~\cite{tang2024} offer an intermediate point between Clements and butterfly on the depth--universality tradeoff and merit future benchmarking.
 Our results show that classification does not require universality: the network learns effective transformations within the butterfly subgroup at every tested scale.
 We also tested 2-layer architectures with modReLU nonlinearity at $N{=}16$ on vowel.
 Adding a second layer did not improve accuracy for either topology: butterfly dropped from $84.3 \pm 1.7$\% to $79.6 \pm 3.2$\%, while Clements collapsed to $45.8 \pm 15.3$\% with high variance across seeds.
@@ -476,7 +477,7 @@ The doubled optical depth (8 and 32 layers respectively) appears to outweigh any
 \textit{What we did not model.}
 Our simulations have several simplifications that could affect the relative topology ranking:
 \begin{itemize}
-\item \emph{Waveguide crossing loss.} Butterfly requires physical waveguide crossings for non-adjacent port connections (visible as dashed lines in Fig.~\ref{fig:schematics}c,d). At ${\sim}0.02$\,dB per crossing~\cite{shafiee2023}, this could partially offset butterfly's depth advantage. Quantifying this requires layout-level analysis specific to the target foundry and technology node.
+\item \emph{Waveguide crossing loss.} Butterfly requires physical waveguide crossings for non-adjacent port connections (visible as dashed lines in Fig.~\ref{fig:schematics}c,d). At ${\sim}0.02$\,dB per crossing~\cite{shafiee2024}, this could partially offset butterfly's depth advantage. As a rough estimate, at $N{=}16$ each butterfly stage has stride-$2^k$ connections requiring $O(N)$ crossings across $\log_2 N = 4$ stages, totaling ${\sim}30$ crossings per path and adding ${\sim}0.6$\,dB of loss. This is comparable to one additional MZI and would reduce but not eliminate butterfly's advantage over Clements (whose planar layout requires no crossings). A precise estimate requires layout-level analysis specific to the foundry.
 \item \emph{Wavelength dependence.} MZI splitting ratios vary with wavelength. This affects all topologies but penalizes deeper meshes more, likely reinforcing butterfly's advantage, though we have not modeled this.
 \item \emph{Coupler imbalance.} We model phase errors only. Directional coupler splitting ratio errors are an additional impairment that may affect topologies differently~\cite{marchesin2025}.
 \item \emph{Diamond and braid topologies.} Their path-balancing properties~\cite{shokraneh2020,marchesin2025} could improve robustness by equalizing loss across all input--output paths. These are important comparisons that we leave for future work.
@@ -521,7 +522,7 @@ Validated implementations of diamond, braid, and other emerging topologies would
 \section{Conclusion}
 \label{sec:conclusion}
 
-We compared four MZI mesh topologies under identical training, insertion loss, and phase noise conditions across 133 experiments.
+We compared four MZI mesh topologies under identical training, insertion loss, and phase noise conditions across 145 experiments.
 Butterfly/FFT consistently occupies the Pareto front, achieving comparable classification accuracy to universal topologies at substantially lower hardware cost and with better noise robustness.
 The advantage is driven by its $O(\log N)$ optical depth and grows with both mesh size and insertion loss.
 In the tested regime, topology choice had a larger effect on robustness than noise-aware training.
@@ -542,7 +543,7 @@ Computations were performed on a GPU cloud instance (Vast.ai).
 
 \bibliography{references}
 
-\begin{thebibliography}{21}
+\begin{thebibliography}{22}
 
 \bibitem{shen2017}
 Y.~Shen, N.~C.~Harris, S.~Skirlo, M.~Prabhu, T.~Baehr-Jones, M.~Hochberg, X.~Sun, S.~Zhao, H.~Larochelle, D.~Englund, and M.~Solja\v{c}i\'{c},
@@ -589,10 +590,10 @@ M.~Y.~S.~Fang, S.~Manipatruni, C.~Wierzynski, A.~Khosrowshahi, and M.~R.~DeWeese
 \textit{Design of optical neural networks with component imprecisions},
 Opt.\ Express \textbf{27}, 14009 (2019).
 
-\bibitem{shafiee2023}
+\bibitem{shafiee2024}
 A.~Shafiee, M.~Nikdast, S.~Pasricha, and S.~Abadal,
-\textit{Crosstalk-aware design exploration for silicon photonic neural networks},
-arXiv:2308.03249 (2023).
+\textit{Crosstalk noise reduction in silicon photonic neural networks through topology exploration},
+J.\ Lightwave Technol.\ \textbf{42}, 4598 (2024).
 
 \bibitem{bandyopadhyay2021}
 S.~Bandyopadhyay, R.~Hamerly, and D.~Englund,
@@ -643,6 +644,11 @@ Nat.\ Commun.\ \textbf{13}, 6831 (2022).
 S.~Bandyopadhyay, A.~Sludds, S.~Krastanov, R.~Hamerly, N.~Harris, D.~Bunandar, M.~Streshinsky, M.~Hochberg, and D.~Englund,
 \textit{Single-chip photonic deep neural network with forward-only training},
 Nat.\ Photon.\ \textbf{18}, 1335 (2024).
+
+\bibitem{tang2024}
+R.~Tang, R.~Tanomura, T.~Tanemura, and Y.~Nakano,
+\textit{Ten-port unitary optical processor on a silicon photonic chip},
+Phys.\ Rev.\ Appl.\ \textbf{21}, 014054 (2024).
 
 \end{thebibliography}
 
