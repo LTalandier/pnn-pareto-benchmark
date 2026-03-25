@@ -957,7 +957,14 @@ Several limitations should be noted:
         Fashion-MNIST, CIFAR-10), PCA reduces input dimensionality to $N$.
         This benefits all topologies equally but limits absolute accuracy and
         obscures potential differences in how topologies handle
-        high-dimensional structure.
+        high-dimensional structure.  Eliminating PCA would require meshes of
+        $N \geq 784$ (MNIST) or $N \geq 3072$ (CIFAR-10), which would further
+        amplify the depth advantage---Clements at $N{=}784$ would accumulate
+        $156.8$\,dB of insertion loss---but would also push butterfly's crossing
+        loss into a potentially prohibitive regime (${\sim}23.5$\,dB per port at
+        $N{=}784$ with 0.02\,dB/crossing), suggesting that large-scale PNN
+        deployment may require topologies combining logarithmic depth with
+        sub-quadratic crossing counts.
 
   \item \textbf{Limited scale.}  The largest mesh tested is $N{=}128$.
         Behavior at $N{=}256$ or larger, where crossing loss grows further,
