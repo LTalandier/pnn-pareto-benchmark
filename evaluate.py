@@ -50,10 +50,8 @@ def evaluate_model(model, test_loader, device):
             }
             results['clean_accuracy'] = acc
         else:
-            trial_accs = []
-            for _ in range(MC_TRIALS):
-                acc = _compute_accuracy(model, test_loader, device, sigma=sigma)
-                trial_accs.append(acc)
+            trial_accs = _compute_accuracy_mc(
+                model, test_loader, device, sigma, MC_TRIALS)
             mean_acc = sum(trial_accs) / len(trial_accs)
             std_acc = torch.tensor(trial_accs).std().item()
             results['accuracies_by_noise'][f'{sigma:.3f}'] = {
@@ -85,6 +83,23 @@ def _compute_accuracy(model, test_loader, device, sigma=0.0):
             correct += (preds.argmax(dim=-1) == y).sum().item()
             total += y.size(0)
     return correct / total if total > 0 else 0.0
+
+
+def _compute_accuracy_mc(model, test_loader, device, sigma, n_trials):
+    """Run n_trials MC noise trials in one vectorized forward pass per batch."""
+    trial_correct = torch.zeros(n_trials, device=device)
+    total = 0
+    with torch.no_grad():
+        for x, y in test_loader:
+            x, y = x.to(device), y.to(device)
+            batch_size = y.size(0)
+            # preds: [n_trials, batch, n_classes]
+            preds = model.forward_with_noise(x, sigma, n_mc_trials=n_trials)
+            # y: [batch] -> [n_trials, batch]
+            y_exp = y.unsqueeze(0).expand(n_trials, -1)
+            trial_correct += (preds.argmax(dim=-1) == y_exp).sum(dim=1).float()
+            total += batch_size
+    return (trial_correct / total).tolist()
 
 
 def train_model(model, train_loader, device, n_epochs=100, lr=0.005):

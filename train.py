@@ -120,7 +120,7 @@ def run_experiment():
     print(f"\n  Accuracy by noise level:")
     for sigma, data in sorted(results['accuracies_by_noise'].items(),
                                key=lambda x: float(x[0])):
-        print(f"    σ={sigma}: {data['mean']:.4f} ± {data.get('std', 0):.4f}")
+        print(f"    sigma={sigma}: {data['mean']:.4f} +/- {data.get('std', 0):.4f}")
     print(f"{'='*60}")
 
 

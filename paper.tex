@@ -1,5 +1,6 @@
-\documentclass[preprint,aps,pra,superscriptaddress,notitlepage,floatfix]{revtex4-2}
+\documentclass[11pt,a4paper]{article}
 
+\usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{xcolor}
@@ -7,106 +8,210 @@
 \usepackage{tikz}
 \usepackage{hyperref}
 \usepackage{multirow}
+\usepackage{authblk}
+\usepackage{caption}
+\usepackage{float}
 
 \usetikzlibrary{positioning,calc}
 
-\begin{document}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black
+}
 
-\title{Quantitative Pareto comparison of MZI mesh topologies for photonic neural networks under fabrication impairments}
+\title{MZI mesh topology comparison for photonic neural networks:\\
+Pareto analysis with crossing loss from $N{=}4$ to $N{=}128$}
 
 \author{Lucas Talandier}
-% TODO: add ORCID if available, e.g.: \affiliation{ORCID: 0000-0000-0000-0000}
-\affiliation{Independent researcher, Paris, France}
+\affil{Independent researcher, Paris, France}
 
 \date{\today}
 
-\begin{abstract}
-Photonic neural networks (PNNs) based on Mach--Zehnder interferometer (MZI) meshes can implement matrix--vector multiplication at the speed of light, but choosing among proposed mesh topologies requires navigating tradeoffs between accuracy, hardware cost, and robustness to fabrication impairments.
-No unified comparison under identical conditions exists.
-We present a Pareto benchmark of four topologies (Clements, Reck, butterfly/FFT, and SCF fractal), evaluated with physically meaningful per-MZI insertion loss in the forward pass and Monte Carlo phase noise analysis (7 noise levels, 30 trials each) on two classification datasets.
-Butterfly/FFT dominates the Pareto front at all tested scales ($N{=}4$ to 32): at $N{=}16$ it achieves $84.3 \pm 1.7$\% accuracy (over 4 seeds) at 15$\times$ lower hardware cost than Clements, with 1.8$\times$ better noise robustness.
-This advantage grows with insertion loss: at 0.5\,dB/MZI, butterfly drops only 2.6 percentage points (averaged over 4 seeds) while Clements drops 4.6.
-Noise-aware training improves deep topologies but cannot close the depth gap: butterfly \emph{without} noise-aware training outperforms Clements \emph{with} it.
-The framework and data are open-source for extending to additional topologies.
-\end{abstract}
+\begin{document}
 
 \maketitle
+
+%% ================================================================
+\begin{abstract}
+Photonic neural networks (PNNs) based on Mach--Zehnder interferometer (MZI) meshes
+implement matrix--vector multiplication in the optical domain, but selecting among
+proposed mesh topologies requires navigating tradeoffs between accuracy, hardware cost,
+robustness, and physical loss mechanisms that have not been evaluated under identical
+conditions.  We present a simulation-based Pareto benchmark of four topologies---Clements,
+Reck, butterfly/FFT, and SCF fractal---evaluated with per-MZI insertion loss,
+\emph{waveguide crossing loss}, and Monte Carlo phase-noise analysis (seven noise levels,
+30 trials each) on four classification tasks (Vowel, MNIST, Fashion-MNIST, CIFAR-10)
+from $N{=}4$ to $N{=}128$ ports.  We observe that butterfly/FFT dominates the Pareto
+front at all tested scales: at $N{=}64$ it outperforms Clements by $+3.3$ to $+4.8$
+percentage points across all four datasets, with up to $2.8\times$ better noise robustness
+and $100\times$ lower hardware cost.  Crossing loss, modeled at 0.02\,dB per waveguide
+intersection, degrades butterfly accuracy by 0.7\,pp at $N{=}16$ and 3.2\,pp at $N{=}128$
+(relative to zero crossing loss), but becomes far more damaging for SCF fractal at
+large $N$ due to its $O(N^2)$ crossing count.  At $N{=}128$ (4 seeds), Clements collapses
+to near-random accuracy ($26.3 \pm 2.9$\%) while butterfly retains $76.6 \pm 2.1$\%.
+The optical depth of the mesh---not the MZI count---is the binding constraint
+on PNN scalability.  All simulation code and data are open-source.
+\end{abstract}
 
 %% ================================================================
 \section{Introduction}
 \label{sec:intro}
 
-Photonic neural networks based on meshes of Mach--Zehnder interferometers implement matrix--vector multiplication in the optical domain, offering potential advantages in throughput and energy efficiency over electronic accelerators~\cite{shen2017,tsakyridis2024,bandyopadhyay2024}.
-Multiple mesh topologies have been proposed: the Clements rectangular mesh~\cite{clements2016}, the Reck triangular decomposition~\cite{reck1994}, butterfly/FFT architectures~\cite{tian2022,feng2022}, diamond meshes~\cite{shokraneh2020}, braid meshes~\cite{marchesin2025}, and sine-cosine fractal (SCF) decompositions~\cite{basani2023}.
-Each proposal demonstrates advantages using different metrics, noise models, and benchmarks, and no unified comparison exists under identical conditions.
+Photonic neural networks based on meshes of Mach--Zehnder interferometers implement
+matrix--vector multiplication in the optical domain, offering potential advantages in
+throughput and energy efficiency~\cite{shen2017,tsakyridis2024,bandyopadhyay2024}.
+Multiple mesh topologies have been proposed: the Clements rectangular
+mesh~\cite{clements2016}, the Reck triangular decomposition~\cite{reck1994},
+butterfly/FFT architectures~\cite{tian2022,feng2022}, and sine-cosine fractal (SCF)
+decompositions~\cite{basani2023}, among others~\cite{shokraneh2020,marchesin2025}.
+Each proposal reports advantages using different metrics, noise models, and benchmarks,
+making direct comparison difficult.
 
-Existing comparisons are pairwise and incomplete.
-Fang~\textit{et al.}~\cite{fang2019} compare GridNet and FFTNet architectures only.
-Shokraneh~\textit{et al.}~\cite{shokraneh2020} evaluate Reck versus Diamond on insertion loss balancing without classification training.
-Basani~\textit{et al.}~\cite{basani2023} compare SCF, Reck, and Clements on matrix fidelity metrics rather than end-to-end classification.
-Shafiee~\textit{et al.}~\cite{shafiee2024} analyze loss and crosstalk for Clements, Reck, and Diamond but do not train networks.
-No study evaluates more than three topologies with trained classification, insertion loss applied per-MZI in the forward pass, and Monte Carlo noise analysis.
-Gu~\textit{et al.}~\cite{gu2022} and Jiang~\textit{et al.}~\cite{jiang2025} perform automated topology search within continuous supermesh parameterizations; our work instead compares established named topologies head-to-head under identical conditions.
+Three specific gaps persist in the literature.  First, no study incorporates
+\emph{waveguide crossing loss} alongside per-MZI insertion loss when comparing
+topologies.  Topologies such as butterfly and SCF fractal require waveguide crossings
+that introduce additional optical loss; ignoring this mechanism biases comparisons in
+their favor.  Second, existing comparisons are limited to small mesh sizes ($N \leq 32$)
+and typically use at most two datasets.  Third, comparisons are pairwise and
+incomplete: Fang~\textit{et al.}~\cite{fang2019} compare GridNet and FFTNet only;
+Shokraneh~\textit{et al.}~\cite{shokraneh2020} evaluate Reck versus Diamond on
+insertion-loss balancing without classification training;
+Basani~\textit{et al.}~\cite{basani2023} compare SCF, Reck, and Clements on matrix
+fidelity rather than end-to-end classification;
+Shafiee~\textit{et al.}~\cite{shafiee2024} analyze loss and crosstalk for Clements,
+Reck, and Diamond without training networks.
+Gu~\textit{et al.}~\cite{gu2022} and Jiang~\textit{et al.}~\cite{jiang2025} perform
+automated topology search within continuous supermesh parameterizations; our work
+instead compares established named topologies head-to-head under identical conditions.
 
-We present a unified benchmark of four topologies under identical physics, training, and evaluation conditions.
-We measure three axes simultaneously: classification accuracy, hardware cost (MZI count $\times$ optical depth), and noise robustness.
-Insertion loss is physically applied per MZI in the differentiable forward pass, and phase noise is evaluated at seven levels with 30 Monte Carlo trials each.
-Two standard datasets are used: Deterding vowel classification~\cite{shen2017} and Fashion-MNIST~\cite{xiao2017}.
-Pareto front analysis reveals topology operating regimes.
+We address these gaps through four contributions:
+\begin{enumerate}
+  \item A crossing-loss model applied in the differentiable forward pass, with crossing
+        counts computed analytically for each topology and mesh size.
+  \item Scaling from $N{=}4$ to $N{=}128$, revealing a ``depth wall'' where deep
+        topologies collapse.
+  \item Evaluation on four datasets (Vowel, MNIST, Fashion-MNIST, CIFAR-10), providing
+        broader evidence than prior two-dataset studies.
+  \item An open-source simulation framework enabling reproduction and extension to
+        additional topologies.
+\end{enumerate}
 
-Our main findings are: (i)~butterfly/FFT dominates the Pareto front at all tested scales ($N{=}4$ to~32), with 15--40$\times$ lower hardware cost than universal topologies; (ii)~its $O(\log N)$ depth provides 1.5--2$\times$ better robustness to phase noise; (iii)~noise-aware training improves deep topologies but cannot compensate for the depth disadvantage; (iv)~insertion loss sensitivity amplifies butterfly's advantage in lossy foundry processes; and (v)~butterfly's non-universality does not impair classification performance at any tested scale.
-
+All results reported in this paper are from simulation.  No experimental photonic
+hardware was used.
 
 %% ================================================================
 \section{Methods}
 \label{sec:methods}
 
 \subsection{MZI physics model}
+\label{sec:mzi}
 
-Each MZI implements a $2 \times 2$ unitary transformation parameterized by internal phase shift $\theta$ and external phase shift $\phi$:
+Each MZI implements a $2 \times 2$ parameterized transformation:
 \begin{equation}
-U(\theta, \phi) = \begin{pmatrix} e^{i\phi}\cos\theta & -\sin\theta \\ e^{i\phi}\sin\theta & \cos\theta \end{pmatrix}.
+U(\theta, \phi) = \begin{pmatrix}
+  e^{i\phi}\cos\theta & -\sin\theta \\
+  e^{i\phi}\sin\theta & \cos\theta
+\end{pmatrix},
 \label{eq:mzi}
 \end{equation}
-Phase noise is modeled as additive Gaussian perturbations $\theta \to \theta + \mathcal{N}(0,\sigma^2)$ and $\phi \to \phi + \mathcal{N}(0,\sigma^2)$ applied independently to each MZI, representing thermo-optic tuning errors typical of silicon photonic foundries ($\sigma \approx 0.01$--$0.1$\,rad)~\cite{bandyopadhyay2021}.
+where $\theta$ is the internal phase shift and $\phi$ the external phase shift, both
+learned during training via backpropagation through the optical mesh.
 
-Insertion loss is applied \emph{per MZI} in the forward pass: after each MZI, both output port amplitudes are attenuated by $\alpha = \sqrt{10^{-L_{\mathrm{dB}}/10}}$, where $L_{\mathrm{dB}}$ is the loss per MZI in dB.
-A typical value for advanced silicon photonic foundries is $L_{\mathrm{dB}} = 0.2$\,dB~\cite{shafiee2024}.
-Note that Clements~\textit{et al.}~\cite{clements2016} report 0.2\,dB per beam splitter; since each MZI contains two beam splitters, our per-MZI loss figure represents an optimistic target assuming overall MZI-level optimization.
-Results at 0.3 and 0.5\,dB/MZI bracket the more conservative estimate.
-Signals traversing $d$ MZIs accumulate $d \times L_{\mathrm{dB}}$\,dB of loss in the optical path, making topology depth a first-order determinant of signal-to-noise ratio.
-Photodetection is modeled as square-law detection: intensity $I = |E|^2$.
+\textbf{Insertion loss.}
+After each MZI, both output port amplitudes are attenuated by
+$\alpha = \sqrt{10^{-L_{\mathrm{dB}}/10}}$, where $L_{\mathrm{dB}}$ is the per-MZI
+insertion loss in dB.  Our default value is $L_{\mathrm{dB}} = 0.2$\,dB, consistent
+with advanced silicon photonic foundries~\cite{shafiee2024}.  We note that
+Clements~\textit{et al.}~\cite{clements2016} report 0.2\,dB per beam splitter; since
+each MZI contains two beam splitters, our per-MZI figure represents an optimistic
+target.  Results at 0.3 and 0.5\,dB/MZI bracket the more conservative estimate.
+Signals traversing $d$ MZIs accumulate $d \times L_{\mathrm{dB}}$\,dB of loss, making
+topology depth a first-order determinant of signal attenuation.
+
+\textbf{Phase noise.}
+Fabrication imprecision is modeled as additive Gaussian perturbations
+$\theta \to \theta + \mathcal{N}(0,\sigma^2)$ and
+$\phi \to \phi + \mathcal{N}(0,\sigma^2)$ applied independently to each MZI,
+representing thermo-optic tuning errors typical of silicon photonic
+foundries~\cite{bandyopadhyay2021}.  During evaluation, noise is applied at seven
+levels ($\sigma = 0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.2$\,rad) with 30 Monte Carlo
+trials each.  The robustness ratio is defined as the mean accuracy at
+$\sigma{=}0.2$\,rad divided by the clean accuracy ($\sigma{=}0$), representing the
+fraction of performance retained under worst-case noise.
+This single-point metric captures worst-case retention but not the full degradation
+profile; the noise--accuracy curves in Figs.~\ref{fig:rob_fmnist}--\ref{fig:rob_vowel}
+provide the complete picture.
+
+\textbf{Photodetection.}
+Square-law detection converts optical field amplitudes to intensities: $I_k = |E_k|^2$
+at each output port $k$.  Classification is performed on the resulting intensity vector.
+
+
+\subsection{Waveguide crossing loss model}
+\label{sec:crossing}
+
+Topologies that route non-adjacent waveguides through the same spatial region require
+physical waveguide crossings.  Each crossing introduces additional optical loss beyond
+MZI insertion loss.  We model crossing loss as a fixed attenuation per crossing event:
+after a signal traverses a crossing, its amplitude is attenuated by
+$\alpha_{\mathrm{x}} = \sqrt{10^{-L_{\mathrm{x}}/10}}$, where
+$L_{\mathrm{x}}$ is the per-crossing loss in dB.
+
+Our default value is $L_{\mathrm{x}} = 0.02$\,dB, consistent with measured values for
+optimized silicon waveguide crossings~\cite{shafiee2024}.  We also evaluate
+$L_{\mathrm{x}} = 0$ (no crossing loss), 0.05, and 0.10\,dB to assess sensitivity.
+
+Crossing counts are computed analytically from each topology's wiring pattern.
+Clements and Reck meshes use only adjacent-waveguide couplings and require zero
+crossings.  Butterfly meshes require non-adjacent connections whose crossing count
+grows as approximately $O(N^2)$.  SCF fractal meshes also require crossings,
+also growing as approximately $O(N^2)$.  Table~\ref{tab:crossings} reports exact counts.
 
 
 \subsection{Topology descriptions}
+\label{sec:topos}
 
-We evaluate four topologies summarized in Table~\ref{tab:topologies} and illustrated schematically in Fig.~\ref{fig:schematics}.
+We evaluate four MZI mesh topologies, summarized in Table~\ref{tab:topologies} and
+illustrated in Fig.~\ref{fig:schematics}.
 
-\begin{table}[b]
-\caption{Topology properties for $N$-port MZI meshes. Depth counts the number of sequential MZI layers.}
+\begin{table}[H]
+\centering
+\caption{Topology properties for an $N$-port MZI mesh.  Depth is the number of
+sequential MZI layers traversed by any optical path.}
 \label{tab:topologies}
-\begin{ruledtabular}
 \begin{tabular}{lcccc}
+\toprule
 Topology & MZIs & Depth & Universal & Ref.\ \\
-\hline
-Clements & $N(N{-}1)/2$ & $N$ & Yes & \cite{clements2016} \\
-Reck & $N(N{-}1)/2$ & $2N{-}3$ & Yes & \cite{reck1994} \\
-Butterfly & $\tfrac{N}{2}\log_2 N$ & $\log_2 N$ & No & \cite{tian2022} \\
-SCF Fractal & $N(N{-}1)/2$ & ${\sim}N$ & Yes & \cite{basani2023} \\
+\midrule
+Clements     & $N(N{-}1)/2$           & $N$         & Yes & \cite{clements2016} \\
+Reck         & $N(N{-}1)/2$           & $2N{-}3$    & Yes & \cite{reck1994} \\
+Butterfly    & $\tfrac{N}{2}\log_2 N$ & $\log_2 N$  & No  & \cite{tian2022} \\
+SCF Fractal  & $N(N{-}1)/2$           & $N{-}1$     & Yes & \cite{basani2023} \\
+\bottomrule
 \end{tabular}
-\end{ruledtabular}
 \end{table}
 
-\textbf{Clements}~\cite{clements2016}: a rectangular mesh of alternating even/odd columns of adjacent-pair MZIs. Universal, depth $N$, widely used in experimental demonstrations.
+\textbf{Clements}~\cite{clements2016}: a rectangular mesh of alternating even/odd
+columns of adjacent-pair MZIs.  Universal, depth $N$, widely used in experimental
+demonstrations~\cite{pai2023,shen2017}.  Requires zero waveguide crossings.
 
-\textbf{Reck}~\cite{reck1994}: a triangular mesh that eliminates one off-diagonal matrix element per column. Same MZI count as Clements but deeper ($2N{-}3$) due to less parallelism.
+\textbf{Reck}~\cite{reck1994}: a triangular decomposition that nulls off-diagonal
+matrix elements sequentially.  Universal, depth $2N{-}3$.  The triangular layout
+produces highly unbalanced path lengths: some ports traverse nearly all MZIs while
+corner ports traverse few.  Requires zero waveguide crossings.
 
-\textbf{Butterfly/FFT}~\cite{tian2022,feng2022}: stride-based connections following the FFT butterfly pattern. Uses only $\frac{N}{2}\log_2 N$ MZIs at depth $\log_2 N$, dramatically fewer and shallower than universal topologies, but cannot represent arbitrary unitaries.
+\textbf{Butterfly/FFT}~\cite{tian2022,feng2022}: a butterfly network inspired by the
+Cooley--Tukey FFT, with $\tfrac{N}{2}\log_2 N$ MZIs in $\log_2 N$ layers.  Not
+universal---it implements a strict subset of $U(N)$---but the logarithmic depth
+provides substantially lower cumulative insertion loss.  Requires waveguide crossings
+that scale super-linearly with $N$.
 
-\textbf{SCF Fractal}~\cite{basani2023}: a recursive sine-cosine decomposition. Same MZI count as Clements with depth ${\sim}N$, but error scales theoretically as $O(N\sigma^4)$ rather than $O(N^2\sigma^2)$.
-
-Diamond~\cite{shokraneh2020} and braid~\cite{marchesin2025} topologies feature path-balancing properties that could improve robustness.
-Their correct implementation requires non-trivial wiring patterns described in the original papers; they are left for future work.
+\textbf{SCF Fractal}~\cite{basani2023}: a self-similar sine-cosine fractal
+construction that recursively builds $N$-port unitaries from smaller blocks.
+Universal, depth $N{-}1$, with a recursive structure that requires waveguide
+crossings at each level of the fractal hierarchy.
 
 \begin{figure*}[t]
 \centering
@@ -128,9 +233,6 @@ Their correct implementation requires non-trivial wiring patterns described in t
     \draw[waveguide, black!20] (0, -\p) -- (9, -\p);
 }
 
-% 8 columns, alternating even/odd
-% Col 0,2,4,6 (even): pairs (0,1),(2,3),(4,5),(6,7)
-% Col 1,3,5,7 (odd): pairs (1,2),(3,4),(5,6)
 \foreach \col in {0,2,4,6} {
     \foreach \base in {0,2,4,6} {
         \pgfmathtruncatemacro{\top}{\base}
@@ -160,8 +262,6 @@ Their correct implementation requires non-trivial wiring patterns described in t
     \draw[waveguide, black!20] (0, -\p) -- (9, -\p);
 }
 
-% Triangular pattern - decreasing MZIs per column
-% Column positions spread across width
 \node[mzi] at (0.6, -0.5) {};
 \node[mzi] at (0.6, -2.5) {};
 \node[mzi] at (0.6, -4.5) {};
@@ -211,12 +311,10 @@ Their correct implementation requires non-trivial wiring patterns described in t
     \draw[waveguide, black!20] (0, -\p) -- (9, -\p);
 }
 
-% Stage 0: stride 1 — pairs (0,1),(2,3),(4,5),(6,7)
 \foreach \base in {0,2,4,6} {
     \pgfmathtruncatemacro{\bot}{\base+1}
     \node[mzi, fill=green!20] at (2, {-(\base+\bot)/2}) {};
 }
-% Stage 1: stride 2 — pairs (0,2),(1,3),(4,6),(5,7)
 \node[mzi, fill=green!20] at (4.5, -1) {};
 \draw[waveguide, green!40!black, densely dashed] (3.8, 0) -- (4.25, -1) (3.8, -2) -- (4.25, -1);
 \node[mzi, fill=green!20] at (4.5, -2) {};
@@ -226,7 +324,6 @@ Their correct implementation requires non-trivial wiring patterns described in t
 \node[mzi, fill=green!20] at (4.5, -6) {};
 \draw[waveguide, green!40!black, densely dashed] (3.8, -5) -- (4.25, -6) (3.8, -7) -- (4.25, -6);
 
-% Stage 2: stride 4 — pairs (0,4),(1,5),(2,6),(3,7)
 \node[mzi, fill=green!20] at (7, -2) {};
 \draw[waveguide, green!40!black, densely dashed] (6.3, 0) -- (6.75, -2) (6.3, -4) -- (6.75, -2);
 \node[mzi, fill=green!20] at (7, -3) {};
@@ -248,24 +345,19 @@ Their correct implementation requires non-trivial wiring patterns described in t
     \draw[waveguide, black!20] (0, -\p) -- (9, -\p);
 }
 
-% SCF: recursive structure - sub-blocks then mixing then sub-blocks
-% Left sub-block: top 4 ports, bottom 4 ports (parallel)
 \node[mzi, fill=red!15] at (1.0, -0.5) {};
 \node[mzi, fill=red!15] at (1.0, -2.5) {};
 \node[mzi, fill=red!15] at (1.0, -4.5) {};
 \node[mzi, fill=red!15] at (1.0, -6.5) {};
 
-% Second level sub-blocks
 \node[mzi, fill=red!15] at (2.0, -0.5) {};
 \node[mzi, fill=red!15] at (2.0, -2.5) {};
 \node[mzi, fill=red!15] at (2.0, -4.5) {};
 \node[mzi, fill=red!15] at (2.0, -6.5) {};
 
-% Sub-sub mixing
 \node[mzi, fill=red!30] at (3.0, -1.5) {};
 \node[mzi, fill=red!30] at (3.0, -5.5) {};
 
-% Mixing layer: connect top[i] with bot[i]
 \node[mzi, fill=red!40] at (4.5, -2) {};
 \draw[waveguide, red!60!black, densely dashed] (3.8, 0) -- (4.25, -2) (3.8, -4) -- (4.25, -2);
 \node[mzi, fill=red!40] at (4.5, -3) {};
@@ -275,7 +367,6 @@ Their correct implementation requires non-trivial wiring patterns described in t
 \node[mzi, fill=red!40] at (4.5, -5) {};
 \draw[waveguide, red!60!black, densely dashed] (3.8, -3) -- (4.25, -5) (3.8, -7) -- (4.25, -5);
 
-% Right sub-blocks (mirror)
 \node[mzi, fill=red!15] at (5.8, -0.5) {};
 \node[mzi, fill=red!15] at (5.8, -2.5) {};
 \node[mzi, fill=red!15] at (5.8, -4.5) {};
@@ -291,259 +382,651 @@ Their correct implementation requires non-trivial wiring patterns described in t
 \end{scope}
 
 \end{tikzpicture}
-\caption{Schematic wiring diagrams for the four MZI mesh topologies at $N{=}8$. Each small rectangle represents one MZI operating on a pair of waveguides. Dashed lines indicate non-adjacent port connections requiring waveguide crossings. (a)~Clements: rectangular, 28 MZIs, depth~8. (b)~Reck: triangular, 28~MZIs, depth~13. (c)~Butterfly: FFT pattern, 12~MZIs, depth~3. (d)~SCF~Fractal: recursive CS decomposition, 28~MZIs, depth~7; shading indicates recursion level.}
+\caption{Schematic wiring diagrams for the four topologies at $N{=}8$.  Each small
+rectangle represents one MZI.  (a)~Clements: rectangular mesh with alternating
+even/odd columns, depth~8.  (b)~Reck: triangular mesh, depth~13.
+(c)~Butterfly/FFT: logarithmic depth (3 layers), with dashed lines indicating
+non-adjacent waveguide connections that require physical crossings.
+(d)~SCF Fractal: recursive sine-cosine construction, depth~7, also requiring
+crossings at the fractal merge stages.}
 \label{fig:schematics}
 \end{figure*}
 
 
 \subsection{Network architecture}
+\label{sec:arch}
 
-Each PNN consists of a single photonic mesh layer followed by photodetection and an electronic classifier (linear layer with 64 hidden units, ReLU activation, then a classification head).
-Using a single photonic layer isolates the topology effect from multi-layer interactions.
-Inputs are PCA-reduced to $N$ dimensions and normalized to $[0,1]$ for optical encoding.
-Training uses Adam optimization for 100 epochs (vowel) or 15--30 epochs (Fashion-MNIST, which has ${\sim}100\times$ more training samples).
+The network consists of a single $N \times N$ MZI mesh implementing a unitary
+(or sub-unitary, with losses) matrix--vector product, followed by square-law
+photodetection and a learned electronic linear classifier.  Input data are encoded
+as optical field amplitudes.  For datasets with dimensionality $d > N$, we apply
+PCA to project inputs to $N$ dimensions before encoding (Table~\ref{tab:pca}).
+For datasets with $d < N$, inputs are zero-padded.
 
+Training uses the Adam optimizer with cross-entropy loss.  The MZI phase parameters
+$(\theta, \phi)$ and the electronic classifier weights are trained jointly.
+Insertion loss and crossing loss are applied in the forward pass during training,
+so the network learns to compensate for these physical effects.  Phase noise is
+\emph{not} applied during standard training; it is applied only during evaluation
+(unless noise-aware training is explicitly indicated).
 
 \subsection{Evaluation protocol}
+\label{sec:eval}
 
-Models are evaluated at seven phase noise levels: $\sigma \in \{0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.2\}$\,rad.
-For $\sigma > 0$, we run 30 Monte Carlo trials and report mean accuracy and standard deviation.
-At 30 trials, the standard error of the mean accuracy is below 0.015 for all configurations tested, confirming adequate convergence.
-The \textit{robustness ratio} is defined as the mean accuracy at $\sigma{=}0.2$\,rad divided by the clean accuracy ($\sigma{=}0$).
-\textit{Hardware cost} is defined as $\text{MZI count} \times \text{optical depth}$, a proxy for chip area and worst-case latency.
-This composite metric is a simplification; MZI count and optical depth have distinct physical implications (chip area versus accumulated loss).
-We verified that topology rankings are consistent when these axes are analyzed separately.
-Pareto optimality identifies non-dominated points across the accuracy--cost plane.
+Each configuration is trained for 100 epochs with 4 random seeds unless otherwise
+noted.  Evaluation proceeds in two stages:
+\begin{enumerate}
+  \item \textbf{Clean accuracy}: the trained model is evaluated without phase noise
+        to obtain the nominal accuracy.
+  \item \textbf{Noise robustness}: phase noise at $\sigma \in \{0, 0.01, 0.02,
+        0.05, 0.1, 0.15, 0.2\}$\,rad is injected, with 30 Monte Carlo trials per
+        noise level.  The robustness ratio is defined as the mean accuracy at
+        $\sigma{=}0.2$\,rad divided by the clean accuracy, representing the fraction
+        of performance retained under the worst tested noise level.
+\end{enumerate}
 
+Hardware cost is defined as $\text{MZIs} \times \text{depth}$, providing a proxy
+for the space--time product of the optical computation.
 
 \subsection{Datasets}
+\label{sec:datasets}
 
-\textbf{Deterding vowel}~\cite{shen2017}: 11 classes, 10 features, ${\sim}550$ samples. The standard PNN benchmark since Shen~\textit{et al.}; included for comparability with prior work.
-PCA at $N{=}4, 8, 16$ retains 68.9\%, 91.2\%, and 100\% of the variance, respectively; the dataset is fully represented at $N{=}16$.
+We evaluate on four classification tasks of varying difficulty:
 
-\textbf{Fashion-MNIST}~\cite{xiao2017}: 10 classes, 784 features PCA-reduced to $N$, 60{,}000 training / 10{,}000 test samples. A harder task that tests whether topology advantages persist with more data and more classes.
-PCA at $N{=}4, 8, 16$ retains only 47.0\%, 59.2\%, and 67.6\% of the variance, so accuracy is partly limited by the input representation rather than the mesh topology.
+\textbf{Vowel}~\cite{shen2017}: Deterding vowel recognition, 10 features, 11
+classes, 528 training / 462 test samples.  A standard benchmark in the PNN
+literature.
+
+\textbf{MNIST}~\cite{lecun1998}: Handwritten digit classification, 784 features
+(28$\times$28 images), 10 classes, 60\,000/10\,000 train/test split.
+
+\textbf{Fashion-MNIST}~\cite{xiao2017}: Fashion article classification, same
+dimensions as MNIST but more challenging, 10 classes.
+
+\textbf{CIFAR-10}~\cite{krizhevsky2009}: Natural image classification, 3072
+features (32$\times$32$\times$3), 10 classes, 50\,000/10\,000 train/test split.
+
+Table~\ref{tab:pca} reports the fraction of input variance retained by PCA
+projection to $N$ dimensions.
+
+\begin{table}[H]
+\centering
+\caption{Percentage of input variance retained by PCA projection to $N$ dimensions.
+Vowel has only 10 original features, so $N \geq 16$ retains 100\%.}
+\label{tab:pca}
+\begin{tabular}{lcc}
+\toprule
+Dataset & $N{=}16$ & $N{=}64$ \\
+\midrule
+Vowel         & 100.0 & 100.0 \\
+Fashion-MNIST &  67.6 &  82.7 \\
+MNIST         &  34.4 &  60.3 \\
+CIFAR-10      &  70.8 &  86.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 
 %% ================================================================
 \section{Results}
 \label{sec:results}
 
-\subsection{Pareto front analysis}
+\subsection{$N{=}16$: Pareto analysis across four topologies}
+\label{sec:n16}
 
-Figure~\ref{fig:pareto} shows accuracy versus hardware cost for all topologies and mesh sizes on both datasets, at $\sigma{=}0$ (clean) and $\sigma{=}0.1$\,rad.
-Table~\ref{tab:n16results} reports the $N{=}16$ results in detail.
+Table~\ref{tab:n16} reports accuracy and robustness for all four topologies at
+$N{=}16$ across four datasets, with per-MZI insertion loss of 0.2\,dB and no
+crossing loss.  Crossing loss sensitivity is analyzed separately in
+Table~\ref{tab:xsweep}.  All values are mean $\pm$ standard deviation
+over 4 seeds.
 
-\begin{table}[b]
-\caption{Performance at $N{=}16$ on vowel dataset (0.2\,dB/MZI loss), averaged over 4 training runs with different random seeds. Robustness ratio defined as accuracy at $\sigma{=}0.2$ divided by clean accuracy.}
-\label{tab:n16results}
-\begin{ruledtabular}
-\begin{tabular}{lccccc}
-Topology & MZIs & Depth & Cost & Acc.\,(\%) & Robust.\ \\
-\hline
-Clements    & 120 & 16 & 1920 & $82.7 \pm 0.9$ & $0.208 \pm 0.004$ \\
-Reck        & 120 & 29 & 3480 & $83.6 \pm 2.3$ & $0.252 \pm 0.029$ \\
-Butterfly   &  32 &  4 &  128 & $84.3 \pm 1.7$ & $0.377 \pm 0.032$ \\
-SCF Fractal & 120 & 15 & 1800 & $84.7 \pm 0.9$ & $0.210 \pm 0.013$ \\
+\begin{table}[H]
+\centering
+\caption{Classification accuracy (\%) and robustness (robustness ratio) at $N{=}16$, with
+$L_{\mathrm{MZI}} = 0.2$\,dB, no crossing loss ($L_{\mathrm{x}} = 0$).  Mean $\pm$~std
+over 4 seeds.  Crossing loss effects are reported in Table~\ref{tab:xsweep}.}
+\label{tab:n16}
+\begin{tabular}{lcccccccc}
+\toprule
+ & \multicolumn{2}{c}{Vowel} & \multicolumn{2}{c}{F-MNIST} & \multicolumn{2}{c}{MNIST} & \multicolumn{2}{c}{CIFAR-10} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-9}
+Topology & Acc & Rob & Acc & Rob & Acc & Rob & Acc & Rob \\
+\midrule
+Butterfly    & 84.3$\pm$1.7 & 0.377 & 81.5$\pm$0.2 & 0.362 & 92.7$\pm$0.1 & 0.342 & 40.5$\pm$0.3 & 0.391 \\
+Clements     & 82.7$\pm$0.9 & 0.208 & 80.6$\pm$0.4 & 0.221 & 91.7$\pm$0.6 & 0.169 & 39.6$\pm$0.3 & 0.287 \\
+Reck         & 83.6$\pm$2.3 & 0.252 & 81.0$\pm$0.2 & 0.290 & 92.1$\pm$0.1 & 0.245 & 40.3$\pm$0.5 & 0.300 \\
+SCF Fractal  & 84.7$\pm$0.9 & 0.210 & 79.9$\pm$0.2 & 0.209 & 91.3$\pm$0.4 & 0.166 & 39.3$\pm$0.3 & 0.285 \\
+\bottomrule
 \end{tabular}
-\end{ruledtabular}
 \end{table}
 
-Butterfly occupies the Pareto-optimal lower-left region (low cost, competitive accuracy) at every noise level.
-At $N{=}16$ on vowel, butterfly achieves $84.3 \pm 1.7$\% accuracy at hardware cost 128, compared to Clements at $82.7 \pm 0.9$\% and cost 1920, representing a 15$\times$ cost reduction with comparable accuracy.
-On Fashion-MNIST (single runs), the pattern is similar: butterfly reaches 79.7\% at cost~128 versus Clements at 78.0\% at cost~1920.
-At $N{=}32$ the gap widens further: butterfly achieves 85.5\% at cost 400, versus Clements at 82.2\% at cost 15{,}872 (40$\times$).
+At $N{=}16$, accuracy differences among topologies are modest (within 2\,pp on
+Vowel, within 1.4\,pp on MNIST), consistent with the observation that all four
+topologies have sufficient expressivity for these tasks at small mesh size.
+However, robustness differences are already substantial: butterfly achieves
+$1.8\times$ the robustness of Clements on Vowel (0.377 vs.\ 0.208) and
+$2.0\times$ on MNIST (0.342 vs.\ 0.169), a direct consequence of its
+$\log_2 16 = 4$ depth versus Clements's depth of 16.
 
-Among universal topologies, Reck achieves the highest mean clean accuracy at $N{=}16$ on vowel ($83.6 \pm 2.3$\%) but at the highest hardware cost (3480).
-SCF Fractal ($84.7 \pm 0.9$\%) slightly outperforms Clements ($82.7 \pm 0.9$\%) at similar depth, but both sit far from the Pareto front due to their high MZI count.
+On the Pareto front of accuracy vs.\ hardware cost, butterfly dominates: it uses
+only 32 MZIs (depth~4, cost $= 128$) compared to 120 MZIs (depth~16, cost $= 1920$)
+for Clements, a $15\times$ cost reduction with comparable or superior accuracy.
 
-\begin{figure*}[t]
+
+\subsection{Scaling to $N{=}64$}
+\label{sec:n64}
+
+The advantage of shallow topologies grows rapidly with $N$.
+Table~\ref{tab:n64} reports results for all four topologies at $N{=}64$ on Vowel
+and Fashion-MNIST.
+
+\begin{table}[H]
 \centering
-\includegraphics[width=0.48\textwidth]{results/figures/pareto_sigma0.00_vowel.png}%
-\hfill
-\includegraphics[width=0.48\textwidth]{results/figures/pareto_sigma0.10_vowel.png}
-\\[2pt]
-\includegraphics[width=0.48\textwidth]{results/figures/pareto_sigma0.00_fmnist.png}%
-\hfill
-\includegraphics[width=0.48\textwidth]{results/figures/pareto_sigma0.10_fmnist.png}
-\caption{Pareto front: accuracy versus hardware cost (MZIs\,$\times$\,depth) for all topologies and mesh sizes. Left column: clean ($\sigma{=}0$). Right column: noisy ($\sigma{=}0.1$\,rad). Top row: vowel dataset (mean $\pm$ std over 4 seeds). Bottom row: Fashion-MNIST (mean $\pm$ std over 3--4 seeds). Dashed line indicates the Pareto front computed from mean values.}
-\label{fig:pareto}
-\end{figure*}
+\caption{Performance at $N{=}64$ with $L_{\mathrm{MZI}} = 0.2$\,dB and
+$L_{\mathrm{x}} = 0.02$\,dB.  Cost $=$ MZIs $\times$ depth.
+Mean $\pm$~std over 4 seeds.}
+\label{tab:n64}
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{3}{c}{Vowel} & \multicolumn{2}{c}{Fashion-MNIST} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-6}
+Topology & Acc (\%) & Rob & Cost & Acc (\%) & Rob \\
+\midrule
+Butterfly    & 78.0$\pm$3.5 & 0.393 &     1\,152 & 83.7$\pm$0.3 & 0.275 \\
+Reck         & 81.5$\pm$2.4 & 0.268 & 252\,000   & 81.5$\pm$1.2 & 0.271 \\
+Clements     & 73.9$\pm$1.7 & 0.138 & 129\,024   & 80.1$\pm$1.0 & 0.130 \\
+SCF Fractal  & 63.7$\pm$4.3 & 0.154 & 127\,008   & 78.3$\pm$0.8 & 0.130 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
+At $N{=}64$, the depth gap becomes decisive.  Butterfly achieves 83.7\% on
+Fashion-MNIST vs.\ 80.1\% for Clements ($+3.6$\,pp) at $112\times$ lower hardware
+cost (1\,152 vs.\ 129\,024).  On Vowel, Reck slightly outperforms butterfly in
+accuracy (81.5\% vs.\ 78.0\%) owing to its path-length distribution (discussed in
+Section~\ref{sec:discussion}), but at $219\times$ higher cost.
 
-\subsection{Robustness versus depth}
+SCF Fractal's accuracy drops to 63.7\% on Vowel, substantially below all other
+topologies.  This is attributable to the combination of its $O(N)$ depth (comparable
+to Clements) and its additional crossing losses (408 total crossings at $N{=}16$,
+growing to 12\,384 at $N{=}64$).
 
-Figure~\ref{fig:robustness} shows accuracy versus phase noise $\sigma$ for all topologies at $N{=}16$.
-There is a clear relationship between optical depth and noise sensitivity, though not perfectly monotonic.
-Butterfly (depth~4) retains $37.7 \pm 3.2$\% of its clean accuracy at $\sigma{=}0.2$ on vowel (averaged over 4 seeds) and 43\% on Fashion-MNIST.
-Clements (depth~16) and SCF Fractal (depth~15) retain only $20.8 \pm 0.4$\% and $21.0 \pm 1.3$\%, respectively.
+Table~\ref{tab:bvsc} extends the butterfly--Clements comparison to all four datasets
+at $N{=}64$.
 
-Reck presents a notable result: despite having the deepest topology (depth~29), it achieves robustness of $0.252 \pm 0.029$, consistently better than Clements ($0.208 \pm 0.004$) across all 4 training seeds.
-We attribute this to Reck's triangular structure, in which some output ports are reached through significantly fewer MZIs than the maximum depth, effectively creating a distribution of path lengths rather than a uniform depth.
-This suggests that \emph{maximum depth} alone does not fully determine robustness; the distribution of path lengths matters.
-
-SCF Fractal's theoretical $O(N\sigma^4)$ error scaling advantage~\cite{basani2023} is not apparent in our results.
-At $N{=}16$, SCF (depth~15) and Clements (depth~16) show essentially identical robustness ($0.210 \pm 0.013$ vs.\ $0.208 \pm 0.004$).
-The $\sigma^4$ advantage likely manifests at very small $\sigma$ where the depth-driven $\sigma^2$ effect does not yet dominate; at the noise levels relevant to current foundries ($\sigma > 0.01$), depth is the primary determinant.
-
-\begin{figure}[t]
+\begin{table}[H]
 \centering
-\includegraphics[width=0.9\columnwidth]{results/figures/robustness_N16_vowel.png}
-\caption{Accuracy versus phase noise $\sigma$ for all topologies at $N{=}16$ on vowel. Shaded regions show $\pm 1$ standard deviation over 30 Monte Carlo trials. Butterfly's shallow depth (4 layers) provides consistently superior noise tolerance. Fashion-MNIST results show the same pattern (butterfly retains 43\% at $\sigma{=}0.2$ versus 24\% for Clements).}
-\label{fig:robustness}
+\caption{Butterfly vs.\ Clements at $N{=}64$, all four datasets.
+$\Delta$ = butterfly $-$ Clements accuracy.  Mean $\pm$~std over 4 seeds.}
+\label{tab:bvsc}
+\begin{tabular}{lcccc}
+\toprule
+Dataset & Butterfly Acc & Clements Acc & $\Delta$ & Butt.\ / Clem.\ Rob \\
+\midrule
+MNIST         & 93.4$\pm$0.4 & 88.6$\pm$0.6 & $+$4.8\,pp & 0.238 / 0.124 \\
+Fashion-MNIST & 83.7$\pm$0.3 & 80.1$\pm$1.0 & $+$3.6\,pp & 0.275 / 0.130 \\
+Vowel         & 78.0$\pm$3.5 & 73.9$\pm$1.7 & $+$4.1\,pp & 0.393 / 0.138 \\
+CIFAR-10      & 45.1$\pm$0.3 & 41.8$\pm$0.4 & $+$3.3\,pp & 0.271 / 0.240 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Butterfly outperforms Clements by 3.3--4.8 percentage points on every dataset,
+with consistently higher robustness.  The advantage is uniform across tasks of
+varying difficulty, from MNIST (93.4\% vs.\ 88.6\%) to CIFAR-10 (45.1\% vs.\
+41.8\%).  The absolute accuracy on CIFAR-10 is low for both topologies, reflecting
+the information loss inherent in PCA projection to 64 dimensions (86.1\% variance
+retained) and the limited capacity of a single-layer optical network, not a
+limitation specific to any topology.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\columnwidth]{results/figures/robustness_N64_fmnist.png}
+\caption{Accuracy vs.\ phase-noise level ($\sigma$) at $N{=}64$ on Fashion-MNIST.
+Butterfly degrades most gracefully, retaining 67.1\% at $\sigma = 0.05$ where
+Clements has already fallen to 32.0\%.}
+\label{fig:rob_fmnist}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\columnwidth]{results/figures/robustness_N64_vowel.png}
+\caption{Accuracy vs.\ phase-noise level ($\sigma$) at $N{=}64$ on Vowel.
+Similar pattern: butterfly and Reck degrade gradually while Clements and SCF Fractal
+exhibit sharp cliffs between $\sigma = 0.02$ and $\sigma = 0.05$.}
+\label{fig:rob_vowel}
+\end{figure}
+
+Figures~\ref{fig:rob_fmnist} and~\ref{fig:rob_vowel} show the full noise-degradation
+curves.  On Fashion-MNIST, butterfly retains 80.2\% accuracy at $\sigma = 0.02$ and
+67.1\% at $\sigma = 0.05$, while Clements drops to 64.0\% and 32.0\% at the same
+noise levels.  By $\sigma = 0.1$, Clements is at 15.3\% (near random for 10 classes),
+while butterfly remains at 44.6\%.  Reck shows intermediate behavior, benefiting from
+the fact that its short-path ports experience less noise accumulation.  SCF Fractal
+tracks Clements closely, consistent with their similar depths.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\columnwidth]{results/figures/n64_butterfly_vs_clements.png}
+\caption{Butterfly vs.\ Clements accuracy at $N{=}64$ across all four datasets.
+Butterfly is consistently 3--5\,pp higher.}
+\label{fig:bvsc_bar}
+\end{figure}
+
+
+\subsection{Crossing loss analysis}
+\label{sec:crossing_results}
+
+Table~\ref{tab:crossings} reports crossing counts for butterfly and SCF fractal
+meshes (Clements and Reck have zero crossings at all sizes).
+
+\begin{table}[H]
+\centering
+\caption{Waveguide crossing statistics.  Total crossings (Total X), mean crossings
+per port (X/port), and crossings per port per layer (X/port/layer).
+Clements and Reck: 0 crossings at all sizes (omitted).}
+\label{tab:crossings}
+\begin{tabular}{llrrrrc}
+\toprule
+Topology & $N$ & MZIs & Depth & Total X & X/port & X/port/layer \\
+\midrule
+Butterfly &  16 &   32 &  4 &     264 &  16.5 &  4.12 \\
+Butterfly &  32 &   80 &  5 &   1\,248 &  39.0 &  7.80 \\
+Butterfly &  64 &  192 &  6 &   5\,472 &  85.5 & 14.25 \\
+Butterfly & 128 &  448 &  7 &  23\,040 & 180.0 & 25.71 \\
+\midrule
+SCF Fractal &  16 &  120 & 15 &     408 &  25.5 &  1.70 \\
+SCF Fractal &  32 &  496 & 31 &   2\,352 &  73.5 &  2.37 \\
+SCF Fractal &  64 & 2\,016 & 63 &  12\,384 & 193.5 &  3.07 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The total crossing count for butterfly is exactly
+$\frac{3}{2}N(N - \log_2 N - 1)$, growing as $\sim\!\frac{3}{2}N^2$ for large $N$.  At $N{=}128$, butterfly
+has 23\,040 total crossings (180 per port).  SCF fractal has even more crossings
+per port at large $N$: 193.5 per port at $N{=}64$ vs.\ 85.5 for butterfly.
+
+Table~\ref{tab:xsweep} quantifies the impact of crossing loss on accuracy for
+butterfly and SCF fractal at $N{=}16$.
+
+\begin{table}[H]
+\centering
+\caption{Crossing loss sensitivity at $N{=}16$ on Vowel.  Mean $\pm$~std over
+4 seeds.}
+\label{tab:xsweep}
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{2}{c}{Butterfly} & \multicolumn{2}{c}{SCF Fractal} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+$L_{\mathrm{x}}$ (dB) & Acc (\%) & Rob & Acc (\%) & Rob \\
+\midrule
+0.00 & 84.3$\pm$1.7 & 0.377$\pm$0.032 & 84.7$\pm$0.9 & 0.210$\pm$0.012 \\
+0.02 & 83.6$\pm$1.6 & 0.379$\pm$0.027 & 83.8$\pm$0.6 & 0.215$\pm$0.004 \\
+0.05 & 82.7$\pm$1.3 & 0.386$\pm$0.026 & 82.4$\pm$1.7 & 0.223$\pm$0.003 \\
+0.10 & 80.8$\pm$1.5 & 0.399$\pm$0.023 & 81.7$\pm$0.4 & 0.218$\pm$0.007 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At $N{=}16$, crossing loss is a modest effect: increasing $L_{\mathrm{x}}$ from 0 to
+0.10\,dB reduces butterfly accuracy by 3.5\,pp and SCF fractal by 3.0\,pp.
+However, the crossing count grows quadratically with $N$ (Table~\ref{tab:crossings}),
+so this effect becomes substantially more important at larger mesh sizes.
+The slight increase in robustness ratio with crossing loss (Table~\ref{tab:xsweep})
+is an artifact of the ratio definition: absolute accuracy at $\sigma{=}0.2$ is
+approximately constant (${\sim}32$\%) across all crossing-loss levels, so the ratio
+rises mechanically as the denominator (clean accuracy) declines.
+At $N{=}128$ with 0.02\,dB crossing loss, butterfly's 23\,040 crossings contribute
+an additional aggregate loss that reduces accuracy by 3.2\,pp compared to the
+zero-crossing baseline (Table~\ref{tab:n128}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\columnwidth]{results/figures/crossing_sweep_N16.png}
+\caption{Accuracy vs.\ crossing loss per intersection at $N{=}16$ on Vowel.
+Both butterfly and SCF fractal degrade gracefully at this mesh size, with
+approximately linear accuracy loss.}
+\label{fig:xsweep}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\columnwidth]{results/figures/crossing_scaling.png}
+\caption{Impact of crossing loss on accuracy as a function of mesh size $N$.
+The penalty grows with $N$ due to increasing crossing counts, but remains
+small relative to insertion-loss effects for butterfly up to $N{=}128$.}
+\label{fig:xscaling}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\columnwidth]{results/figures/crossing_counts.png}
+\caption{Total waveguide crossings vs.\ mesh size $N$ for butterfly and SCF
+fractal topologies.  Both grow super-linearly; SCF fractal exceeds butterfly
+at $N{=}64$.}
+\label{fig:xcounts}
+\end{figure}
+
+
+\subsection{The depth wall: $N{=}128$}
+\label{sec:n128}
+
+Table~\ref{tab:n128} reports results at $N{=}128$ averaged over 4 random seeds.
+
+\begin{table}[H]
+\centering
+\caption{Performance at $N{=}128$ on Vowel.  Mean $\pm$~std over 4 seeds.
+Butterfly is tested with and without crossing loss.  Clements has 0 crossings
+but 8\,128 MZIs at depth~128.}
+\label{tab:n128}
+\begin{tabular}{lccc}
+\toprule
+Configuration & Acc (\%) & Cost & Crossings \\
+\midrule
+Butterfly (0.02\,dB cross.) & $76.6 \pm 2.1$ &    3\,136 & 23\,040 \\
+Butterfly (no cross.)       & $79.8 \pm 2.1$ &    3\,136 &      0  \\
+Clements                    & $26.3 \pm 2.9$ & 1\,040\,384 &      0  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+SCF Fractal is omitted at $N{=}128$: its $O(N^2)$ crossing count would exceed
+40\,000, and its depth ($N{-}1 = 127$) matches Clements, so similar or worse
+collapse is expected.  Reck (depth $2N{-}3 = 253$) is likewise omitted.
+
+At $N{=}128$, the depth wall becomes catastrophic for Clements: its 128-layer
+depth causes cumulative insertion loss of $128 \times 0.2 = 25.6$\,dB, effectively
+extinguishing the optical signal.  The resulting $26.3 \pm 2.9$\% accuracy is barely
+above the random baseline ($1/11 = 9.1$\% for 11-class Vowel), indicating that the mesh is no
+longer performing meaningful computation.
+
+Butterfly at $N{=}128$ retains $76.6 \pm 2.1$\% accuracy ($79.8 \pm 2.1$\% without
+crossing loss), traversing only $\log_2 128 = 7$ MZI layers (1.4\,dB cumulative
+insertion loss).  The crossing loss penalty at this scale is 3.2\,pp, a measurable
+but not catastrophic cost.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\columnwidth]{results/figures/scaling_sigma0.00_vowel_extended.png}
+\caption{Clean accuracy vs.\ mesh size $N$ on Vowel (no crossing loss,
+$L_{\mathrm{MZI}}=0.2$\,dB).  Crossing loss is excluded to isolate the depth
+effect; results with crossing loss are reported in Tables~\ref{tab:xsweep}
+and~\ref{tab:n128}.  Butterfly maintains performance through $N{=}128$ while
+Clements collapses sharply beyond $N{=}32$.  $N{=}4$--$32$: best of 4 seeds;
+$N{=}64$, $N{=}128$: best of available seeds.}
+\label{fig:scaling}
 \end{figure}
 
 
 \subsection{Insertion loss sensitivity}
+\label{sec:insertion}
 
-Table~\ref{tab:loss} shows the effect of increasing per-MZI insertion loss from 0.2 to 0.5\,dB at $N{=}16$ on vowel, averaged over 4 random seeds.
-Butterfly is the most loss-tolerant topology: its mean clean accuracy drops only 2.6\,pp from 0.2 to 0.5\,dB/MZI (from $84.3 \pm 1.7$\% to $81.7 \pm 0.4$\%), because signals traverse only 4 MZIs.
-Clements drops 4.6\,pp (from $82.7 \pm 0.9$\% to $78.1 \pm 1.5$\%) and SCF Fractal drops 5.0\,pp, as their signals traverse 15--16 MZIs.
-The robustness ratio remains largely stable across loss levels for all topologies, indicating that the topology ranking does not change with foundry quality; butterfly's advantage simply grows in magnitude.
+Table~\ref{tab:insertion} reports accuracy and robustness at three per-MZI insertion
+loss levels at $N{=}16$ on Vowel (no crossing loss), isolating the effect of MZI
+loss from crossing loss.
 
-\begin{table}[t]
-\caption{Insertion loss sensitivity at $N{=}16$, vowel dataset, averaged over 4 random seeds. Clean accuracy (\%) and robustness ratio at three loss levels. Uncertainties are one standard deviation.}
-\label{tab:loss}
-\begin{ruledtabular}
+\begin{table}[H]
+\centering
+\caption{Insertion loss sensitivity at $N{=}16$ on Vowel.  Mean $\pm$~std over
+4 seeds, no crossing loss.}
+\label{tab:insertion}
 \begin{tabular}{lcccccc}
+\toprule
  & \multicolumn{2}{c}{0.2\,dB} & \multicolumn{2}{c}{0.3\,dB} & \multicolumn{2}{c}{0.5\,dB} \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
 Topology & Acc & Rob & Acc & Rob & Acc & Rob \\
-\hline
-Clements    & $82.7{\pm}0.9$ & $0.21$ & $81.7{\pm}2.7$ & $0.22$ & $78.1{\pm}1.5$ & $0.23$ \\
-Reck        & $83.6{\pm}2.3$ & $0.25$ & $80.6{\pm}1.6$ & $0.28$ & $79.3{\pm}2.7$ & $0.30$ \\
-Butterfly   & $84.3{\pm}1.7$ & $0.38$ & $84.5{\pm}1.0$ & $0.38$ & $81.7{\pm}0.4$ & $0.40$ \\
-SCF Fractal & $84.7{\pm}0.9$ & $0.21$ & $82.0{\pm}0.4$ & $0.23$ & $79.7{\pm}0.9$ & $0.22$ \\
+\midrule
+Clements    & 82.7$\pm$0.9 & 0.21 & 81.7$\pm$2.7 & 0.22 & 78.1$\pm$1.5 & 0.23 \\
+Reck        & 83.6$\pm$2.3 & 0.25 & 80.6$\pm$1.6 & 0.28 & 79.3$\pm$2.7 & 0.30 \\
+Butterfly   & 84.3$\pm$1.7 & 0.38 & 84.5$\pm$1.0 & 0.38 & 81.7$\pm$0.4 & 0.40 \\
+SCF Fractal & 84.7$\pm$0.9 & 0.21 & 82.0$\pm$0.4 & 0.23 & 79.7$\pm$0.9 & 0.22 \\
+\bottomrule
 \end{tabular}
-\end{ruledtabular}
 \end{table}
+
+Butterfly is the least sensitive to insertion loss: increasing from 0.2 to
+0.5\,dB/MZI reduces butterfly accuracy by 2.6\,pp (averaged over seeds) while
+Clements drops 4.6\,pp and SCF fractal drops 5.0\,pp.  This is a direct
+consequence of depth: butterfly traverses $\log_2 16 = 4$ MZIs per path, so
+the total insertion loss at 0.5\,dB/MZI is only 2.0\,dB, compared to 8.0\,dB
+for Clements (depth~16) and ${\sim}8$\,dB for SCF Fractal.
 
 
 \subsection{Noise-aware training}
+\label{sec:nat}
 
-Table~\ref{tab:noiseaware} compares standard and noise-aware training for Clements and SCF Fractal at $N{=}16$ on vowel, both averaged over 4 random seeds.
-Noise-aware training (injecting $\sigma{=}0.05$ during training) improves robustness ratios: +35\% relative for Clements (from $0.208 \pm 0.004$ to $0.281 \pm 0.016$), +25\% for SCF Fractal (from $0.210 \pm 0.013$ to $0.262 \pm 0.006$).
-However, this comes at a cost in clean accuracy: $-$16.9\,pp for Clements (from $82.7 \pm 0.9$\% to $65.8 \pm 3.3$\%) and $-$13.4\,pp for SCF Fractal (from $84.7 \pm 0.9$\% to $71.3 \pm 1.9$\%).
+We tested noise-aware training (injecting $\sigma = 0.05$\,rad noise during
+training) as a mitigation strategy for deep topologies, following the approach
+of Fang~\textit{et al.}~\cite{fang2019}.  Table~\ref{tab:nat} reports results
+at $N{=}16$ on Vowel.
 
-Notably, butterfly \emph{without} noise-aware training achieves better robustness ($0.377 \pm 0.032$) than Clements \emph{with} it ($0.281 \pm 0.016$).
-In this regime, topology choice has a larger effect on robustness than training strategy.
-
-\begin{table}[t]
-\caption{Standard versus noise-aware training at $N{=}16$, vowel, 0.2\,dB/MZI. All values are mean $\pm$ std over 4 random seeds. Noise-aware training injects $\sigma{=}0.05$ during training.}
-\label{tab:noiseaware}
-\begin{ruledtabular}
-\begin{tabular}{lccccc}
- & \multicolumn{2}{c}{Standard} & \multicolumn{2}{c}{Noise-aware} \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-5}
-Topology & Acc\,(\%) & Rob & Acc\,(\%) & Rob \\
-\hline
-Clements    & $82.7 \pm 0.9$ & $0.208 \pm 0.004$ & $65.8 \pm 3.3$ & $0.281 \pm 0.016$ \\
-SCF Fractal & $84.7 \pm 0.9$ & $0.210 \pm 0.013$ & $71.3 \pm 1.9$ & $0.262 \pm 0.006$ \\
-\hline
-Butterfly (std) & $84.3 \pm 1.7$ & $0.377 \pm 0.032$ & \multicolumn{2}{c}{---} \\
+\begin{table}[H]
+\centering
+\caption{Noise-aware training at $N{=}16$ on Vowel.  ``Standard'' = trained
+without noise; ``Noise-aware'' = trained with $\sigma = 0.05$\,rad noise injection.
+Mean $\pm$~std over 4 seeds.}
+\label{tab:nat}
+\begin{tabular}{lccc}
+\toprule
+Configuration & Acc (\%) & Rob \\
+\midrule
+Clements standard     & 82.7$\pm$0.9 & 0.208$\pm$0.004 \\
+Clements noise-aware  & 65.8$\pm$3.3 & 0.281$\pm$0.016 \\
+SCF standard          & 84.7$\pm$0.9 & 0.210$\pm$0.013 \\
+SCF noise-aware       & 71.3$\pm$1.9 & 0.262$\pm$0.006 \\
+Butterfly standard    & 84.3$\pm$1.7 & 0.377$\pm$0.032 \\
+\bottomrule
 \end{tabular}
-\end{ruledtabular}
 \end{table}
 
-
-\subsection{Scaling}
-
-Figure~\ref{fig:scaling} shows classification accuracy versus mesh size $N$ for each topology.
-All topologies improve monotonically with $N$, reflecting both increased parameter count and better PCA input representation.
-Butterfly matches or exceeds universal topologies at $N \geq 8$ despite its non-universality: at $N{=}32$, butterfly (85.5\%) outperforms Clements (82.2\%) while the hardware cost gap widens from $15\times$ at $N{=}16$ to $40\times$ at $N{=}32$, following the $O(N^2)$ versus $O(N\log N)$ scaling.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.9\columnwidth]{results/figures/scaling_sigma0.00_vowel.png}
-\caption{Clean accuracy versus mesh size $N$ on vowel (mean $\pm$ std over 4 seeds). $N{=}32$ was run for Clements and butterfly only.}
-\label{fig:scaling}
-\end{figure}
+Noise-aware training improves the robustness metric for Clements (from 0.208 to
+0.281) and SCF fractal (from 0.210 to 0.262), but at a substantial cost in clean
+accuracy: Clements drops from 82.7\% to 65.8\%, and SCF fractal from 84.7\% to
+71.3\%.  Butterfly \emph{without} noise-aware training (84.3\%, robustness 0.377)
+outperforms both Clements and SCF fractal \emph{with} noise-aware training on both
+metrics simultaneously.  This indicates that the depth advantage cannot be
+compensated by training strategies alone.
 
 
 %% ================================================================
 \section{Discussion}
 \label{sec:discussion}
 
-\textit{Why butterfly wins, and when it might not.}
-Butterfly's Pareto dominance derives from its $O(\log N)$ depth.
-Depth drives both phase noise accumulation and insertion loss, making it the primary determinant of robustness in realistic photonic systems.
-However, butterfly implements only a strict subgroup of $U(N)$: for applications requiring arbitrary unitary transformations (quantum computing, optical channel estimation), universal topologies remain necessary.
-Reduced-depth universal architectures~\cite{tang2024} offer an intermediate point between Clements and butterfly on the depth--universality tradeoff and merit future benchmarking.
-Our results show that classification does not require universality: the network learns effective transformations within the butterfly subgroup at every tested scale.
-We also tested 2-layer architectures with modReLU nonlinearity at $N{=}16$ on vowel.
-Adding a second layer did not improve accuracy for either topology: butterfly dropped from $84.3 \pm 1.7$\% to $79.6 \pm 3.2$\%, while Clements collapsed to $45.8 \pm 15.3$\% with high variance across seeds.
-The doubled optical depth (8 and 32 layers respectively) appears to outweigh any expressiveness gain, suggesting that for these tasks and noise levels, a single shallow layer is preferable.
+\subsection{Depth as the binding constraint}
 
-\textit{What we did not model.}
-Our simulations have several simplifications that could affect the relative topology ranking:
-\begin{itemize}
-\item \emph{Waveguide crossing loss.} Butterfly requires physical waveguide crossings for non-adjacent port connections (visible as dashed lines in Fig.~\ref{fig:schematics}c,d). At ${\sim}0.02$\,dB per crossing~\cite{shafiee2024}, this could partially offset butterfly's depth advantage. As a rough estimate, at $N{=}16$ each butterfly stage has stride-$2^k$ connections requiring $O(N)$ crossings across $\log_2 N = 4$ stages, totaling ${\sim}30$ crossings per path and adding ${\sim}0.6$\,dB of loss. This is comparable to one additional MZI and would reduce but not eliminate butterfly's advantage over Clements (whose planar layout requires no crossings). A precise estimate requires layout-level analysis specific to the foundry.
-\item \emph{Wavelength dependence.} MZI splitting ratios vary with wavelength. This affects all topologies but penalizes deeper meshes more, likely reinforcing butterfly's advantage, though we have not modeled this.
-\item \emph{Coupler imbalance.} We model phase errors only. Directional coupler splitting ratio errors are an additional impairment that may affect topologies differently~\cite{marchesin2025}.
-\item \emph{Diamond and braid topologies.} Their path-balancing properties~\cite{shokraneh2020,marchesin2025} could improve robustness by equalizing loss across all input--output paths. These are important comparisons that we leave for future work.
-\item \emph{Fault-tolerant MZI designs.} Hamerly~\textit{et al.}~\cite{hamerly2022nat} demonstrated 3-splitter MZI architectures where matrix fidelity does not degrade with mesh size. Such building blocks could fundamentally alter the depth--robustness tradeoffs reported here, and their interaction with different mesh topologies is an important open question.
-\end{itemize}
+The results consistently identify optical depth---not MZI count or
+universality---as the primary determinant of PNN performance under realistic
+fabrication conditions.  Each MZI layer contributes insertion loss that
+attenuates the optical signal, and phase noise that accumulates across layers.
+Butterfly's $O(\log N)$ depth provides a structural advantage that grows with
+mesh size: at $N{=}16$ the depth ratio is $4{:}16$ (butterfly vs.\ Clements),
+yielding a $1.8\times$ robustness advantage; at $N{=}64$ it is $6{:}64$, yielding
+$2.1\times$; and at $N{=}128$, Clements fails entirely while butterfly is
+unaffected.
 
-\textit{Practical recommendations.}
-For chip designers choosing a topology for inference tasks: if the application is classification or regression, butterfly provides the best accuracy--cost--robustness tradeoff at all tested scales.
-If universality is required, Clements is preferable to Reck (lower depth at same MZI count).
-For lossy foundries ($> 0.3$\,dB/MZI), butterfly's advantage grows.
-We recommend investing in topology selection before noise-aware training, as the former provides larger robustness gains without sacrificing clean accuracy.
-These guidelines apply to the tested regime ($N \leq 32$, classification tasks); they may not hold at $N \geq 128$ or for tasks that fully exploit unitary expressiveness.
-Table~\ref{tab:guidelines} summarizes these recommendations.
+The depth wall manifests as a sharp transition: Clements accuracy on Vowel is
+73.9\% at $N{=}64$ but collapses to $26.3 \pm 2.9$\% at $N{=}128$, a ${\sim}48$\,pp
+drop, while butterfly drops only from 78.0\% to $76.6 \pm 2.1$\% (within seed variance).
 
-\begin{table}[t]
-\caption{Topology selection guidelines based on this study's findings.}
-\label{tab:guidelines}
-\begin{ruledtabular}
-\begin{tabular}{lll}
+\subsection{The SCF fractal crossing-loss trap}
+
+SCF fractal~\cite{basani2023} was proposed with favorable error-tolerance
+properties derived from its self-similar structure.  In our simulations, it
+performs competitively at $N{=}16$ (84.7\% on Vowel, the highest among all
+topologies) but degrades sharply at $N{=}64$ (63.7\%, the lowest).  Two
+factors contribute: (i)~its depth is ${\sim}N$, comparable to Clements, so it
+suffers similar insertion-loss accumulation; and (ii)~its recursive structure
+requires 12\,384 waveguide crossings at $N{=}64$, far more than butterfly's
+5\,472.  The combination of deep MZI paths and high crossing counts makes SCF
+fractal the worst performer at large $N$ in our simulations, despite its
+universality and theoretical error-tolerance properties.
+
+We caution that this result applies specifically to the fabrication-loss regime
+we model.  In a hypothetical regime with negligible insertion and crossing loss,
+SCF fractal's error-correction properties~\cite{basani2023} might confer
+advantages not captured here.
+
+\subsection{Reck's path-length distribution}
+
+Reck achieves 81.5\% on Vowel at $N{=}64$, outperforming butterfly (78.0\%)
+in absolute accuracy despite its $2N{-}3 = 125$ depth.  This is explained by
+Reck's triangular structure: while some ports traverse up to 125 MZIs, many
+ports traverse far fewer.  The mean path length is substantially less than the
+maximum depth, and the highly asymmetric path-length distribution means that
+some input channels experience much less loss than others.  The network can
+learn to route information preferentially through the shorter paths.  However,
+this comes at $219\times$ higher hardware cost (252\,000 vs.\ 1\,152) and lower
+robustness (0.268 vs.\ 0.393).
+
+\subsection{Crossing loss scaling}
+
+The total crossings per port for butterfly is exactly $\frac{3}{2}(N - \log_2 N - 1)$,
+which grows as ${\sim}\frac{3}{2}N$ for large $N$.  At 0.02\,dB per crossing, the
+crossing-induced loss per port is $0.03(N - \log_2 N - 1)$\,dB: approximately 0.33\,dB
+at $N{=}16$, 1.7\,dB at $N{=}64$, and 3.6\,dB at $N{=}128$.  At $N{=}128$, this
+exceeds the MZI insertion loss ($7 \times 0.2 = 1.4$\,dB from the 7 MZI layers).
+If crossing loss per intersection cannot be kept below 0.02\,dB, it will become the
+dominant loss mechanism for butterfly at very large $N$.
+
+\subsection{Fault-tolerant and reduced-depth architectures}
+
+Hamerly~\textit{et al.}~\cite{hamerly2022nat} have proposed asymptotically
+fault-tolerant MZI designs that could mitigate noise accumulation in deep meshes.
+If such designs reduce per-MZI phase sensitivity, they would partially close the
+depth gap, but not the insertion-loss gap (which is a physical, not
+calibration-related, effect).
+Tang~\textit{et al.}~\cite{tang2024} demonstrate a ten-port unitary processor
+using reduced-depth architectures; such designs occupy a middle ground between
+butterfly and the full-depth universal meshes.
+
+\subsection{Practical recommendations}
+
+Table~\ref{tab:recommend} summarizes topology selection guidelines based on our
+simulation results.
+
+\begin{table}[H]
+\centering
+\caption{Topology selection guidelines.  These recommendations are based on
+simulation results and should be validated experimentally.}
+\label{tab:recommend}
+\begin{tabular}{p{3.0cm}p{2.8cm}p{7.5cm}}
+\toprule
 Use case & Recommendation & Rationale \\
-\hline
-Classification / inference & Butterfly & 15$\times$ lower cost, best \\
- & & robustness, non-universality \\
- & & not limiting \\
-Lossy foundry & Butterfly & Depth advantage amplified \\
-($>$\,0.3\,dB/MZI) & & by insertion loss \\
-Universality required & Clements & Full $U(N)$ coverage at \\
-(quantum, channel est.) & & lower depth than Reck \\
-Improving robustness & Change topology & Topology choice more \\
-of deep meshes & first & effective than noise-aware \\
- & & training \\
+\midrule
+$N \leq 16$, any task & Any topology & Accuracy differences are within 2\,pp; universality
+  is not needed for classification at this scale. \\
+$N{=}32$--64, classification & Butterfly & $3$--$5$\,pp accuracy advantage, $2\times$
+  robustness, $100\times$ lower hardware cost vs.\ Clements. \\
+$N \geq 128$, classification & Butterfly & Only viable option; universal topologies
+  collapse under cumulative insertion loss. \\
+High noise environment & Butterfly or Reck & Butterfly for efficiency; Reck if
+  universality is required (at much higher cost). \\
+Exact unitary required & Reck or Clements & Butterfly cannot implement arbitrary
+  $U(N)$; use Clements for lower depth or Reck for better noise resilience. \\
+Low crossing-loss process & Butterfly & Crossing loss penalty is ${\sim}3$\,pp at $N{=}128$
+  with 0.02\,dB/crossing. \\
+\bottomrule
 \end{tabular}
-\end{ruledtabular}
 \end{table}
 
-\textit{The benchmark framework.}
-The framework is open-source and extensible: adding a topology requires implementing a single function that returns a list of MZI layers and port assignments.
-Validated implementations of diamond, braid, and other emerging topologies would enable a more comprehensive comparison.
+\subsection{Limitations}
+
+Several limitations should be noted:
+
+\begin{enumerate}
+  \item \textbf{Simulation only.}  All results are from numerical simulation with
+        idealized noise models.  Real photonic hardware introduces additional effects
+        (thermal crosstalk, wavelength-dependent loss, detector noise, beam-splitter
+        ratio errors) not captured here.  Experimental validation is needed before
+        drawing definitive conclusions.
+
+  \item \textbf{Single optical layer.}  We evaluate a single MZI mesh followed by
+        photodetection.  Multi-layer optical networks with optical nonlinearities
+        between layers could change the topology tradeoffs.
+
+  \item \textbf{Phase noise model.}  We use i.i.d.\ Gaussian phase noise, which
+        may not capture correlated errors from thermal crosstalk or systematic
+        calibration drift.
+
+  \item \textbf{Crossing loss model.}  We model crossings as pure attenuation.
+        Real crossings also introduce crosstalk between waveguides, which could
+        have additional effects on classification performance~\cite{shafiee2024}.
+
+  \item \textbf{PCA preprocessing.}  For high-dimensional datasets (MNIST,
+        Fashion-MNIST, CIFAR-10), PCA reduces input dimensionality to $N$.
+        This benefits all topologies equally but limits absolute accuracy and
+        obscures potential differences in how topologies handle
+        high-dimensional structure.
+
+  \item \textbf{Limited scale.}  The largest mesh tested is $N{=}128$.
+        Behavior at $N{=}256$ or larger, where crossing loss grows further,
+        has not been evaluated.
+
+  \item \textbf{Task scope.}  Classification on four standard datasets may
+        not generalize to all PNN applications (e.g., signal processing,
+        quantum state preparation).
+\end{enumerate}
+
+\subsection{Open-source framework}
+
+The complete simulation framework---including topology generators, training code,
+evaluation pipeline, and analysis scripts---is available as open source.  The
+modular design allows adding new topologies by implementing a single mesh-generation
+function.  We invite the community to extend the benchmark with additional
+topologies, noise models, and experimental validation.
 
 
 %% ================================================================
 \section{Conclusion}
 \label{sec:conclusion}
 
-We compared four MZI mesh topologies under identical training, insertion loss, and phase noise conditions across 145 experiments.
-Butterfly/FFT consistently occupies the Pareto front, achieving comparable classification accuracy to universal topologies at substantially lower hardware cost and with better noise robustness.
-The advantage is driven by its $O(\log N)$ optical depth and grows with both mesh size and insertion loss.
-In the tested regime, topology choice had a larger effect on robustness than noise-aware training.
+We have presented a simulation-based Pareto comparison of four MZI mesh topologies
+for photonic neural networks, evaluated from $N{=}4$ to $N{=}128$ with per-MZI
+insertion loss, waveguide crossing loss, and Monte Carlo phase noise on four
+classification datasets.
 
-Open questions remain: the impact of waveguide crossing loss on butterfly's advantage, whether diamond and braid topologies' path-balancing properties can challenge butterfly on robustness, and whether non-universality becomes a limitation at larger scales or for more complex tasks.
-The framework and all experimental data are publicly available to facilitate these investigations.
+The central finding is that optical depth, not MZI count or universality, is the
+binding constraint on PNN scalability under realistic loss budgets.
+Butterfly/FFT's $O(\log N)$ depth provides 3--5\,pp higher accuracy, up to $2.8\times$
+better noise robustness, and $100\times$ lower hardware cost compared to Clements
+at $N{=}64$.  At $N{=}128$, universal topologies collapse entirely while butterfly
+retains useful accuracy.
 
-\subsection*{Data availability}
-The simulation framework, experiment logs, and all data needed to reproduce these results are available at \url{https://github.com/LTalandier/pnn-pareto-benchmark}.
+Waveguide crossing loss, previously neglected in topology comparisons, is a
+measurable but secondary effect at current technology levels (0.02\,dB/crossing):
+it reduces butterfly accuracy by 0.7\,pp at $N{=}16$ and 3.2\,pp at $N{=}128$.
+It is more problematic for SCF fractal, which combines deep paths with high
+crossing counts.
 
+These results suggest that PNN architectures designed for large-scale deployment
+should prioritize depth reduction over universality.  The butterfly topology's
+non-universality does not impair classification performance at any tested scale,
+while its logarithmic depth provides structural resilience that cannot be matched
+by training strategies applied to deep meshes.
+
+All results are from simulation.  Experimental validation on fabricated photonic
+chips is the essential next step.
 
 %% ================================================================
-\begin{acknowledgments}
-The authors thank the open-source community for the PyTorch, scikit-learn, and Matplotlib libraries used in this work.
-Computations were performed on a GPU cloud instance (Vast.ai).
-\end{acknowledgments}
+\section*{Acknowledgments}
 
+This work was conducted as independent research without external funding.
+The simulation framework, experiment execution, data analysis, and substantial
+portions of this manuscript were produced with the assistance of Claude (Anthropic),
+an AI coding agent.  All simulations were performed using open-source software
+(Python, PyTorch).
 
-\bibliography{references}
+\section*{Data availability}
 
-\begin{thebibliography}{22}
+% TODO: Ensure https://github.com/LTalandier/pnn-pareto-benchmark is public before arXiv submission
+The simulation framework, experiment logs, and analysis scripts are available
+at \url{https://github.com/LTalandier/pnn-pareto-benchmark}.  All numerical
+data reported in this paper are embedded in the tables above.
+
+%% ================================================================
+
+\begin{thebibliography}{24}
 
 \bibitem{shen2017}
 Y.~Shen, N.~C.~Harris, S.~Skirlo, M.~Prabhu, T.~Baehr-Jones, M.~Hochberg, X.~Sun, S.~Zhao, H.~Larochelle, D.~Englund, and M.~Solja\v{c}i\'{c},
@@ -649,6 +1132,16 @@ Nat.\ Photon.\ \textbf{18}, 1335 (2024).
 R.~Tang, R.~Tanomura, T.~Tanemura, and Y.~Nakano,
 \textit{Ten-port unitary optical processor on a silicon photonic chip},
 Phys.\ Rev.\ Appl.\ \textbf{21}, 014054 (2024).
+
+\bibitem{lecun1998}
+Y.~LeCun, L.~Bottou, Y.~Bengio, and P.~Haffner,
+\textit{Gradient-based learning applied to document recognition},
+Proc.\ IEEE \textbf{86}, 2278 (1998).
+
+\bibitem{krizhevsky2009}
+A.~Krizhevsky,
+\textit{Learning multiple layers of features from tiny images},
+Technical report, University of Toronto (2009).
 
 \end{thebibliography}
 

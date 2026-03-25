@@ -34,6 +34,10 @@ def prepare_data(dataset_name, pca_dim, batch_size=128):
         return _prepare_vowel(pca_dim, batch_size)
     elif dataset_name == 'fmnist':
         return _prepare_fmnist(pca_dim, batch_size)
+    elif dataset_name == 'mnist':
+        return _prepare_mnist(pca_dim, batch_size)
+    elif dataset_name == 'cifar10':
+        return _prepare_cifar10(pca_dim, batch_size)
     elif dataset_name == 'iris':
         return _prepare_iris(pca_dim, batch_size)
     else:
@@ -143,6 +147,95 @@ def _prepare_fmnist(pca_dim, batch_size):
     return (DataLoader(train_ds, batch_size=batch_size, shuffle=True),
             DataLoader(test_ds, batch_size=batch_size),
             {'n_classes': 10, 'dataset': 'fmnist', 'pca_dim': pca_dim})
+
+
+def _prepare_mnist(pca_dim, batch_size):
+    """MNIST with PCA reduction."""
+    from torchvision import datasets, transforms
+    transform = transforms.ToTensor()
+    train_set = datasets.MNIST('./data', train=True, download=True,
+                               transform=transform)
+    test_set = datasets.MNIST('./data', train=False, download=True,
+                              transform=transform)
+
+    X_train = train_set.data.float().view(-1, 784).numpy() / 255.0
+    y_train = train_set.targets.numpy()
+    X_test = test_set.data.float().view(-1, 784).numpy() / 255.0
+    y_test = test_set.targets.numpy()
+
+    # PCA
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+    pca = PCA(n_components=pca_dim)
+    X_train = pca.fit_transform(X_train)
+    X_test = pca.transform(X_test)
+
+    var_retained = pca.explained_variance_ratio_.sum()
+
+    # Normalize to [0, 1]
+    global_min = X_train.min(axis=0)
+    global_range = X_train.max(axis=0) - global_min + 1e-8
+    X_train = (X_train - global_min) / global_range
+    X_test = (X_test - global_min) / global_range
+    X_test = np.clip(X_test, 0, 1)
+
+    train_ds = TensorDataset(
+        torch.tensor(X_train, dtype=torch.float32),
+        torch.tensor(y_train, dtype=torch.long))
+    test_ds = TensorDataset(
+        torch.tensor(X_test, dtype=torch.float32),
+        torch.tensor(y_test, dtype=torch.long))
+
+    return (DataLoader(train_ds, batch_size=batch_size, shuffle=True),
+            DataLoader(test_ds, batch_size=batch_size),
+            {'n_classes': 10, 'dataset': 'mnist', 'pca_dim': pca_dim,
+             'pca_variance_retained': float(var_retained)})
+
+
+def _prepare_cifar10(pca_dim, batch_size):
+    """CIFAR-10 with PCA reduction."""
+    from torchvision import datasets, transforms
+    transform = transforms.ToTensor()
+    train_set = datasets.CIFAR10('./data', train=True, download=True,
+                                 transform=transform)
+    test_set = datasets.CIFAR10('./data', train=False, download=True,
+                                transform=transform)
+
+    # Flatten 32x32x3 -> 3072
+    X_train = np.array(train_set.data, dtype=np.float64).reshape(-1, 3072) / 255.0
+    y_train = np.array(train_set.targets)
+    X_test = np.array(test_set.data, dtype=np.float64).reshape(-1, 3072) / 255.0
+    y_test = np.array(test_set.targets)
+
+    # PCA
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+    pca = PCA(n_components=pca_dim)
+    X_train = pca.fit_transform(X_train)
+    X_test = pca.transform(X_test)
+
+    var_retained = pca.explained_variance_ratio_.sum()
+
+    # Normalize to [0, 1]
+    global_min = X_train.min(axis=0)
+    global_range = X_train.max(axis=0) - global_min + 1e-8
+    X_train = (X_train - global_min) / global_range
+    X_test = (X_test - global_min) / global_range
+    X_test = np.clip(X_test, 0, 1)
+
+    train_ds = TensorDataset(
+        torch.tensor(X_train, dtype=torch.float32),
+        torch.tensor(y_train, dtype=torch.long))
+    test_ds = TensorDataset(
+        torch.tensor(X_test, dtype=torch.float32),
+        torch.tensor(y_test, dtype=torch.long))
+
+    return (DataLoader(train_ds, batch_size=batch_size, shuffle=True),
+            DataLoader(test_ds, batch_size=batch_size),
+            {'n_classes': 10, 'dataset': 'cifar10', 'pca_dim': pca_dim,
+             'pca_variance_retained': float(var_retained)})
 
 
 def _prepare_iris(pca_dim, batch_size):
