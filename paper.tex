@@ -39,8 +39,8 @@ Photonic neural networks (PNNs) based on Mach--Zehnder interferometer (MZI) mesh
 implement matrix--vector multiplication in the optical domain, but selecting among
 proposed mesh topologies requires navigating tradeoffs between accuracy, hardware cost,
 robustness, and physical loss mechanisms that have not been evaluated under identical
-conditions.  We present a simulation-based Pareto benchmark of four topologies---Clements,
-Reck, butterfly/FFT, and SCF fractal---evaluated with per-MZI insertion loss,
+conditions.  We present a simulation-based Pareto benchmark of four topologies (Clements,
+Reck, butterfly/FFT, and SCF fractal) evaluated with per-MZI insertion loss,
 \emph{waveguide crossing loss}, and Monte Carlo phase-noise analysis (seven noise levels,
 30 trials each) on four classification tasks (Vowel, MNIST, Fashion-MNIST, CIFAR-10)
 from $N{=}4$ to $N{=}128$ ports.  We observe that butterfly/FFT dominates the Pareto
@@ -51,7 +51,7 @@ intersection, degrades butterfly accuracy by 0.7\,pp at $N{=}16$ and 3.2\,pp at 
 (relative to zero crossing loss), but becomes far more damaging for SCF fractal at
 large $N$ due to its $O(N^2)$ crossing count.  At $N{=}128$ (4 seeds), Clements collapses
 to near-random accuracy ($26.3 \pm 2.9$\%) while butterfly retains $76.6 \pm 2.1$\%.
-The optical depth of the mesh---not the MZI count---is the binding constraint
+The optical depth of the mesh, not the MZI count, is the binding constraint
 on PNN scalability.  All simulation code and data are open-source.
 \end{abstract}
 
@@ -204,7 +204,7 @@ corner ports traverse few.  Requires zero waveguide crossings.
 
 \textbf{Butterfly/FFT}~\cite{tian2022,feng2022}: a butterfly network inspired by the
 Cooley--Tukey FFT, with $\tfrac{N}{2}\log_2 N$ MZIs in $\log_2 N$ layers.  Not
-universal---it implements a strict subset of $U(N)$---but the logarithmic depth
+universal (it implements a strict subset of $U(N)$), but the logarithmic depth
 provides substantially lower cumulative insertion loss.  Requires waveguide crossings
 that scale super-linearly with $N$.
 
@@ -835,8 +835,8 @@ compensated by training strategies alone.
 
 \subsection{Depth as the binding constraint}
 
-The results consistently identify optical depth---not MZI count or
-universality---as the primary determinant of PNN performance under realistic
+The results consistently identify optical depth, not MZI count or
+universality, as the primary determinant of PNN performance under realistic
 fabrication conditions.  Each MZI layer contributes insertion loss that
 attenuates the optical signal, and phase noise that accumulates across layers.
 Butterfly's $O(\log N)$ depth provides a structural advantage that grows with
@@ -959,8 +959,8 @@ Several limitations should be noted:
         obscures potential differences in how topologies handle
         high-dimensional structure.  Eliminating PCA would require meshes of
         $N \geq 784$ (MNIST) or $N \geq 3072$ (CIFAR-10), which would further
-        amplify the depth advantage---Clements at $N{=}784$ would accumulate
-        $156.8$\,dB of insertion loss---but would also push butterfly's crossing
+        amplify the depth advantage (Clements at $N{=}784$ would accumulate
+        $156.8$\,dB of insertion loss) but would also push butterfly's crossing
         loss into a potentially prohibitive regime (${\sim}23.5$\,dB per port at
         $N{=}784$ with 0.02\,dB/crossing), suggesting that large-scale PNN
         deployment may require topologies combining logarithmic depth with
@@ -977,8 +977,8 @@ Several limitations should be noted:
 
 \subsection{Open-source framework}
 
-The complete simulation framework---including topology generators, training code,
-evaluation pipeline, and analysis scripts---is available as open source.  The
+The complete simulation framework, including topology generators, training code,
+evaluation pipeline, and analysis scripts, is available as open source.  The
 modular design allows adding new topologies by implementing a single mesh-generation
 function.  We invite the community to extend the benchmark with additional
 topologies, noise models, and experimental validation.
