@@ -950,8 +950,12 @@ Several limitations should be noted:
         calibration drift.
 
   \item \textbf{Crossing loss model.}  We model crossings as pure attenuation.
-        Real crossings also introduce crosstalk between waveguides, which could
-        have additional effects on classification performance~\cite{shafiee2024}.
+        Real crossings also introduce crosstalk between waveguides~\cite{shafiee2024}.
+        A validation experiment at $N{=}16$ with $2 \times 2$ crosstalk coupling
+        matrices ($\varepsilon = 0.001$, i.e.\ $-30$\,dB) showed less than 2\,pp
+        additional accuracy change relative to the attenuation-only model, within
+        seed variance, confirming that attenuation dominates at this scale.
+        The effect may grow at larger $N$ where crossing counts are higher.
 
   \item \textbf{PCA preprocessing.}  For high-dimensional datasets (MNIST,
         Fashion-MNIST, CIFAR-10), PCA reduces input dimensionality to $N$.
