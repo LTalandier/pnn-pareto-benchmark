@@ -160,7 +160,11 @@ $\alpha_{\mathrm{x}} = \sqrt{10^{-L_{\mathrm{x}}/10}}$, where
 $L_{\mathrm{x}}$ is the per-crossing loss in dB.
 
 Our default value is $L_{\mathrm{x}} = 0.02$\,dB, consistent with measured values for
-optimized silicon waveguide crossings~\cite{shafiee2024}.  We also evaluate
+optimized silicon waveguide crossings~\cite{shafiee2024}.  This value is
+consistent with the best measured single-layer CMOS-compatible
+crossings~\cite{johnson2020}; a comprehensive survey of crossing designs and
+loss benchmarks is provided by Wu~\textit{et al.}~\cite{wu2020crossings}.
+We also evaluate
 $L_{\mathrm{x}} = 0$ (no crossing loss), 0.05, and 0.10\,dB to assess sensitivity.
 
 Crossing counts are computed analytically from each topology's wiring pattern.
@@ -207,11 +211,21 @@ Cooley--Tukey FFT, with $\tfrac{N}{2}\log_2 N$ MZIs in $\log_2 N$ layers.  Not
 universal (it implements a strict subset of $U(N)$), but the logarithmic depth
 provides substantially lower cumulative insertion loss.  Requires waveguide crossings
 that scale super-linearly with $N$.
+Subsequent experimental work has validated butterfly meshes on more demanding
+tasks: Feng~\textit{et al.}~\cite{feng2023resnet} demonstrate a butterfly
+photonic chip achieving ${>}85\%$ measured accuracy on CIFAR-10 using ResNet-20
+with 3-bit precision, while Feng~\textit{et al.}~\cite{feng2024momzi} extend
+the butterfly lineage into a multi-operand MZI (MOMZI) architecture.
 
 \textbf{SCF Fractal}~\cite{basani2023}: a self-similar sine-cosine fractal
 construction that recursively builds $N$-port unitaries from smaller blocks.
 Universal, depth $N{-}1$, with a recursive structure that requires waveguide
 crossings at each level of the fractal hierarchy.
+
+We exclude the Diamond mesh~\cite{shokraneh2020,mojaver2023}, which has zero
+crossings but optical depth ${\sim}2N{-}3$ (Reck class) with $(N{-}1)^2$ MZIs,
+an over-parameterized, monitoring-oriented architecture occupying a different
+design category than the decomposition topologies compared here.
 
 \begin{figure*}[t]
 \centering
@@ -828,6 +842,21 @@ outperforms both Clements and SCF fractal \emph{with} noise-aware training on bo
 metrics simultaneously.  This indicates that the depth advantage cannot be
 compensated by training strategies alone.
 
+Several recent works have advanced hardware-aware training beyond simple noise
+injection.  Xu~\textit{et al.}~\cite{xu2024} push PNN weights toward
+noise-robust operating regions via regularization, achieving ${\sim}4$-bit
+precision improvement without additional hardware.
+Zhan~\textit{et al.}~\cite{zhan2024} construct a differentiable digital twin
+that captures physical non-idealities for gradient-based optimization without
+per-MZI calibration.
+Bandyopadhyay~\textit{et al.}~\cite{bandyopadhyay2023} demonstrate one-time
+error-aware training that transfers across faulty chips, matching
+ideal-hardware performance with errors $5\times$ larger than fabrication
+tolerances.  These methods improve absolute performance under imperfections
+but do not eliminate the depth-dependent signal attenuation that drives the
+topology gap we observe: butterfly's structural advantage persists regardless
+of training strategy.
+
 
 %% ================================================================
 \section{Discussion}
@@ -844,10 +873,18 @@ mesh size: at $N{=}16$ the depth ratio is $4{:}16$ (butterfly vs.\ Clements),
 yielding a $1.8\times$ robustness advantage; at $N{=}64$ it is $6{:}64$, yielding
 $2.1\times$; and at $N{=}128$, Clements fails entirely while butterfly is
 unaffected.
+Yu and Park~\cite{yu2023} corroborate this scaling behavior, showing that Reck
+and Clements meshes develop heavy-tailed phase distributions at scales up to
+$N{=}128$, which amplify noise-induced fidelity loss in proportion to depth.
 
 The depth wall manifests as a sharp transition: Clements accuracy on Vowel is
 73.9\% at $N{=}64$ but collapses to $26.3 \pm 2.9$\% at $N{=}128$, a ${\sim}48$\,pp
 drop, while butterfly drops only from 78.0\% to $76.6 \pm 2.1$\% (within seed variance).
+Industry practice corroborates this finding: the largest commercial photonic
+processors, such as Lightmatter's $128 \times 128$ Envise chip~\cite{ahmed2025},
+deliberately avoid coherent unitary MZI meshes in favor of $O(1)$-depth
+photoelectric multiplication architectures, sidestepping the depth scaling
+limits we quantify here.
 
 \subsection{The SCF fractal crossing-loss trap}
 
@@ -866,6 +903,12 @@ We caution that this result applies specifically to the fabrication-loss regime
 we model.  In a hypothetical regime with negligible insertion and crossing loss,
 SCF fractal's error-correction properties~\cite{basani2023} might confer
 advantages not captured here.
+We note that the Basani/\allowbreak{}Hamerly/\allowbreak{}Englund group has not
+published follow-up work addressing SCF fractal loss sensitivity; their
+subsequent research has instead
+explored alternative paradigms including phase-efficient ``3-MZI''
+architectures~\cite{hamerly2025} and all-photonic frequency-domain
+processors~\cite{basani2024}.
 
 \subsection{Reck's path-length distribution}
 
@@ -896,9 +939,30 @@ fault-tolerant MZI designs that could mitigate noise accumulation in deep meshes
 If such designs reduce per-MZI phase sensitivity, they would partially close the
 depth gap, but not the insertion-loss gap (which is a physical, not
 calibration-related, effect).
+More recently, Hamerly~\textit{et al.}~\cite{hamerly2025} propose a ``3-MZI''
+architecture that reduces the average required phase shift to $O(1/\sqrt{N})$,
+achieving ${\sim}10\times$ reduction in tuning range.  While this does not
+change the $O(N)$ depth, it dramatically reduces per-element sensitivity,
+partially addressing the noise accumulation we observe in deep meshes.
 Tang~\textit{et al.}~\cite{tang2024} demonstrate a ten-port unitary processor
-using reduced-depth architectures; such designs occupy a middle ground between
+that reduces phase-shifter depth from $2N{+}3$ to $N{+}2$ by using multiport
+directional couplers as static mixing blocks, nearly halving depth for the same
+universality class.  Such reduced-depth designs occupy a middle ground between
 butterfly and the full-depth universal meshes.
+
+Recent work has further advanced the depth-reduction frontier.
+Fldzhyan~\textit{et al.}~\cite{fldzhyan2024} extend their earlier
+error-tolerant design~\cite{fldzhyan2020} to non-unitary matrices with depth
+$D = 2N{+}3$, achieving extreme error tolerance.
+Fldzhyan~\textit{et al.}~\cite{fldzhyan2026} propose representing non-unitary
+matrices as sums of two unitaries rather than via SVD, enabling analytical
+programmability; if butterfly meshes are used as the constituent unitaries, this
+architecture inherits their logarithmic depth, a potential pathway toward the
+ideal combination of $O(\log N)$ depth and non-unitary expressivity.
+Crisan~\textit{et al.}~\cite{crisan2025} propose a fundamentally different
+approach: a recurrent (bidirectional) MZI topology that truncates the Clements
+mesh to depth~2 and uses optical recursion, achieving ${>}10\times$ error
+reduction at the cost of sequential passes.
 
 \subsection{Practical recommendations}
 
@@ -944,10 +1008,22 @@ Several limitations should be noted:
   \item \textbf{Single optical layer.}  We evaluate a single MZI mesh followed by
         photodetection.  Multi-layer optical networks with optical nonlinearities
         between layers could change the topology tradeoffs.
+        Recent demonstrations of multi-layer photonic networks, including fully
+        forward-mode training via Lorentz reciprocity~\cite{xue2024}, on-chip
+        backpropagation training~\cite{ashtiani2026}, and error-decoupled deep
+        photonic networks exceeding 200 optical layers~\cite{zhou2025}, suggest
+        that multi-layer architectures may alter topology tradeoffs, particularly
+        if inter-layer nonlinearities can be implemented with net optical
+        gain~\cite{slinkov2025}.
 
   \item \textbf{Phase noise model.}  We use i.i.d.\ Gaussian phase noise, which
         may not capture correlated errors from thermal crosstalk or systematic
         calibration drift.
+        We also note the distinction between the optical crossing crosstalk
+        modeled in Limitation~4 and thermal crosstalk between adjacent phase
+        shifters, which has been comprehensively modeled and experimentally
+        validated by Marchisio~\textit{et al.}~\cite{marchisio2025}; the two
+        effects are additive and could interact at large $N$.
 
   \item \textbf{Crossing loss model.}  We model crossings as pure attenuation.
         Real crossings also introduce crosstalk between waveguides~\cite{shafiee2024}.
@@ -956,6 +1032,14 @@ Several limitations should be noted:
         additional accuracy change relative to the attenuation-only model, within
         seed variance, confirming that attenuation dominates at this scale.
         The effect may grow at larger $N$ where crossing counts are higher.
+        We also note that multi-layer fabrication platforms (e.g., tri-layer
+        SiN-on-Si) have demonstrated crossing loss as low as
+        ${\sim}0.001$~dB~\cite{sacher2017}, potentially reducing
+        crossing-induced penalties by $10$--$30\times$ relative to the
+        single-layer values modeled here.  Such platforms would substantially
+        mitigate the SCF fractal crossing-loss trap identified in
+        Section~\ref{sec:discussion}, though at significant fabrication
+        complexity cost.
 
   \item \textbf{PCA preprocessing.}  For high-dimensional datasets (MNIST,
         Fashion-MNIST, CIFAR-10), PCA reduces input dimensionality to $N$.
@@ -1037,7 +1121,7 @@ data reported in this paper are embedded in the tables above.
 
 %% ================================================================
 
-\begin{thebibliography}{24}
+\begin{thebibliography}{44}
 
 \bibitem{shen2017}
 Y.~Shen, N.~C.~Harris, S.~Skirlo, M.~Prabhu, T.~Baehr-Jones, M.~Hochberg, X.~Sun, S.~Zhao, H.~Larochelle, D.~Englund, and M.~Solja\v{c}i\'{c},
@@ -1153,6 +1237,112 @@ Proc.\ IEEE \textbf{86}, 2278 (1998).
 A.~Krizhevsky,
 \textit{Learning multiple layers of features from tiny images},
 Technical report, University of Toronto (2009).
+
+\bibitem{mojaver2023}
+K.~R.~Mojaver, B.~Zhao, E.~Leung, S.~Safaee, and O.~Liboiron-Ladouceur,
+\textit{Addressing the programming challenges of practical interferometric mesh based optical processors},
+Opt.\ Express \textbf{31}, 23851 (2023).
+
+\bibitem{fldzhyan2024}
+S.~A.~Fldzhyan, M.~Yu.~Saygin, and S.~S.~Straupe,
+\textit{Low-depth, compact, and error-tolerant photonic matrix-vector multiplication beyond the unitary group},
+Opt.\ Express \textbf{32}, 46239 (2024).
+
+\bibitem{fldzhyan2026}
+S.~A.~Fldzhyan, M.~Yu.~Saygin, and S.~S.~Straupe,
+\textit{Universal low-depth two-unitary design of programmable photonic circuits},
+Phys.\ Rev.\ Res.\ \textbf{8}, 013021 (2026).
+
+\bibitem{hamerly2025}
+R.~Hamerly, J.~R.~Basani, A.~Sludds, S.~K.~Vadlamani, and D.~Englund,
+\textit{Toward the information-theoretic limit of programmable photonics},
+APL Photonics \textbf{10}, 110803 (2025).
+
+\bibitem{ahmed2025}
+E.~Ahmed \textit{et al.},
+\textit{Universal photonic artificial intelligence acceleration},
+Nature \textbf{640}, 368 (2025).
+
+\bibitem{sacher2017}
+W.~D.~Sacher \textit{et al.},
+\textit{Tri-layer silicon nitride-on-silicon photonic platform for ultra-low-loss crossings and interlayer transitions},
+Opt.\ Express \textbf{25}, 30862 (2017).
+
+\bibitem{yu2023}
+N.~Yu and S.~Park,
+\textit{Heavy tails and pruning in programmable photonic circuits for universal unitaries},
+Nat.\ Commun.\ \textbf{14}, 1853 (2023).
+
+\bibitem{xu2024}
+H.~Xu \textit{et al.},
+\textit{Control-free and efficient integrated photonic neural networks via hardware-aware training and pruning},
+Optica \textbf{11}, 1039 (2024).
+
+\bibitem{zhan2024}
+G.~Zhan \textit{et al.},
+\textit{Physics-aware analytic-gradient training of photonic neural networks},
+Laser Photonics Rev.\ \textbf{18}, 2300445 (2024).
+
+\bibitem{bandyopadhyay2023}
+S.~Bandyopadhyay, R.~Hamerly, and D.~Englund,
+\textit{Transferable learning on analog hardware},
+Sci.\ Adv.\ \textbf{9}, eadg7904 (2023).
+
+\bibitem{feng2023resnet}
+C.~Feng, J.~Gu, H.~Zhu, R.~Tang, D.~Z.~Pan, and R.~T.~Chen,
+\textit{Evaluation of a compact butterfly-style photonic-electronic neural chip on complicated deep learning tasks},
+in Proc.\ CLEO, San Jose, CA (2023), pp.~1--2.
+
+\bibitem{feng2024momzi}
+C.~Feng \textit{et al.},
+\textit{Integrated multi-operand optical neurons for scalable and hardware-efficient deep learning},
+Nanophotonics \textbf{13}, 2193 (2024).
+
+\bibitem{xue2024}
+Y.~Xue \textit{et al.},
+\textit{Fully forward mode training for optical neural networks},
+Nature \textbf{632}, 280 (2024).
+
+\bibitem{ashtiani2026}
+F.~Ashtiani, M.~H.~Idjadi, and K.~Kim,
+\textit{Integrated photonic neural network with on-chip backpropagation training},
+Nature \textbf{651}, 927 (2026).
+
+\bibitem{zhou2025}
+T.~Zhou, Y.~Jiang, Z.~Xu \textit{et al.},
+\textit{Hundred-layer photonic deep learning},
+Nat.\ Commun.\ \textbf{16}, 10382 (2025).
+
+\bibitem{slinkov2025}
+G.~Slinkov \textit{et al.},
+\textit{All-optical nonlinear activation function based on stimulated Brillouin scattering},
+Nanophotonics \textbf{14}, 2711 (2025).
+
+\bibitem{basani2024}
+J.~R.~Basani, K.~Heuck, D.~Englund, and S.~Krastanov,
+\textit{All-photonic artificial-neural-network processor via nonlinear optics},
+Phys.\ Rev.\ Appl.\ \textbf{22}, 014009 (2024).
+
+\bibitem{crisan2025}
+C.~Crisan, J.~Carpenter, and S.~Arafin,
+\textit{Recurrent multiport interferometers for fault-tolerant programmable photonics},
+Opt.\ Express \textbf{33}, 24628 (2025).
+
+\bibitem{johnson2020}
+A.~D.~Johnson, M.~J.~R.~Thompson, and D.~Sahin,
+\textit{Low-loss, low-crosstalk waveguide crossing for scalable integrated silicon photonics applications},
+Opt.\ Express \textbf{28}, 12498 (2020).
+
+\bibitem{wu2020crossings}
+H.~Wu, C.~Mu, W.~Cheng \textit{et al.},
+\textit{State-of-the-art and perspectives on silicon waveguide crossings: a review},
+Micromachines \textbf{11}, 326 (2020).
+
+% VERIFY: distinct from Marchesin et al.\ 2025 (Opt.\ Express, braided mesh) — different paper, similar names
+\bibitem{marchisio2025}
+F.~Marchisio \textit{et al.},
+\textit{Comprehensive model of MZI-based circuits for photonic computing applications},
+Commun.\ Phys.\ \textbf{8}, 277 (2025).
 
 \end{thebibliography}
 
