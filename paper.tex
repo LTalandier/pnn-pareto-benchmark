@@ -87,12 +87,14 @@ insertion-loss balancing without classification training;
 Basani~\textit{et al.}~\cite{basani2023} compare SCF, Reck, and Clements on matrix
 fidelity rather than end-to-end classification;
 Shafiee~\textit{et al.}~\cite{shafiee2024} analyze loss and crosstalk for Clements,
-Reck, and Diamond without training networks.
+Reck, and Diamond without training networks;
+Marchesin~\textit{et al.}~\cite{marchesin2025} evaluate a braided mesh against
+Clements on matrix fidelity rather than end-to-end classification.
 Gu~\textit{et al.}~\cite{gu2022} and Jiang~\textit{et al.}~\cite{jiang2025} perform
 automated topology search within continuous supermesh parameterizations; our work
 instead compares established named topologies head-to-head under identical conditions.
 
-We address these gaps through four contributions:
+We address these gaps through five contributions:
 \begin{enumerate}
   \item A crossing-loss model applied in the differentiable forward pass, with crossing
         counts computed analytically for each topology and mesh size.
@@ -102,6 +104,9 @@ We address these gaps through four contributions:
         broader evidence than prior two-dataset studies.
   \item An open-source simulation framework enabling reproduction and extension to
         additional topologies.
+  \item The first systematic classification evaluation of braid and diamond
+        topologies at scale ($N$ up to 128), revealing that matrix fidelity does
+        not predict classification performance under realistic loss budgets.
 \end{enumerate}
 
 All results reported in this paper are from simulation.  No experimental photonic
@@ -659,8 +664,8 @@ Butterfly is consistently 3--5\,pp higher.}
 \subsection{Crossing loss analysis}
 \label{sec:crossing_results}
 
-Table~\ref{tab:crossings} reports crossing counts for butterfly and SCF fractal
-meshes (Clements and Reck have zero crossings at all sizes).
+Table~\ref{tab:crossings} reports crossing counts for butterfly, braid, and SCF
+fractal meshes (Clements, Reck, and Diamond have zero crossings at all sizes).
 
 \begin{table}[H]
 \centering
@@ -928,6 +933,21 @@ Diamond's symmetric structure forces every port through the full depth while
 Reck's triangular structure allows the network to route information through
 shorter paths.  Neither path balancing (Braid) nor over-parameterization
 (Diamond) can compensate for depth.
+
+This result directly contradicts the fidelity-based evaluation of
+Marchesin~\textit{et al.}~\cite{marchesin2025}, who showed that the braid
+architecture achieves higher matrix fidelity than Clements under combined
+non-idealities, attributing this to its perfectly balanced path lengths.  Our
+classification results invert this prediction: at $N{=}128$, braid collapses
+to $11.4$\% accuracy, worse than Clements's $26.3$\%, despite its comparable
+depth ($N{-}1$ vs.\ $N$) and perfect path balancing.  The discrepancy arises
+because matrix fidelity, measured against random unitaries, does not account
+for the network's ability to learn compensatory strategies during
+gradient-based training, nor does it capture the additional crossing loss
+(${\sim}3.6$~dB from 23\,814 crossings) that pushes braid's total signal
+attenuation beyond Clements's.  This highlights a methodological concern:
+topology evaluations based on fidelity metrics alone may not predict
+classification behavior under realistic loss conditions.
 
 Industry practice corroborates this finding: the largest commercial photonic
 processors, such as Lightmatter's $128 \times 128$ Envise chip~\cite{ahmed2025},
