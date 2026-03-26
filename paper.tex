@@ -39,8 +39,8 @@ Photonic neural networks (PNNs) based on Mach--Zehnder interferometer (MZI) mesh
 implement matrix--vector multiplication in the optical domain, but selecting among
 proposed mesh topologies requires navigating tradeoffs between accuracy, hardware cost,
 robustness, and physical loss mechanisms that have not been evaluated under identical
-conditions.  We present a simulation-based Pareto benchmark of four topologies (Clements,
-Reck, butterfly/FFT, and SCF fractal) evaluated with per-MZI insertion loss,
+conditions.  We present a simulation-based Pareto benchmark of six topologies (Clements,
+Reck, butterfly/FFT, SCF fractal, braid, and diamond) evaluated with per-MZI insertion loss,
 \emph{waveguide crossing loss}, and Monte Carlo phase-noise analysis (seven noise levels,
 30 trials each) on four classification tasks (Vowel, MNIST, Fashion-MNIST, CIFAR-10)
 from $N{=}4$ to $N{=}128$ ports.  We observe that butterfly/FFT dominates the Pareto
@@ -51,8 +51,13 @@ intersection, degrades butterfly accuracy by 0.7\,pp at $N{=}16$ and 3.2\,pp at 
 (relative to zero crossing loss), but becomes far more damaging for SCF fractal at
 large $N$ due to its $O(N^2)$ crossing count.  At $N{=}128$ (4 seeds), Clements collapses
 to near-random accuracy ($26.3 \pm 2.9$\%) while butterfly retains $76.6 \pm 2.1$\%.
-The optical depth of the mesh, not the MZI count, is the binding constraint
-on PNN scalability.  All simulation code and data are open-source.
+Two additional topologies reinforce the depth thesis: braid (depth $N{-}1$,
+balanced paths with crossings) collapses to $11.4 \pm 1.1$\% at $N{=}128$
+despite perfect path-length symmetry, and diamond (depth $2N{-}3$, zero
+crossings) collapses already at $N{=}64$ ($28.3 \pm 3.2$\%).
+The optical depth of the mesh, not the MZI count, path balancing, or
+universality, is the binding constraint on PNN scalability.
+All simulation code and data are open-source.
 \end{abstract}
 
 %% ================================================================
@@ -64,8 +69,9 @@ matrix--vector multiplication in the optical domain, offering potential advantag
 throughput and energy efficiency~\cite{shen2017,tsakyridis2024,bandyopadhyay2024}.
 Multiple mesh topologies have been proposed: the Clements rectangular
 mesh~\cite{clements2016}, the Reck triangular decomposition~\cite{reck1994},
-butterfly/FFT architectures~\cite{tian2022,feng2022}, and sine-cosine fractal (SCF)
-decompositions~\cite{basani2023}, among others~\cite{shokraneh2020,marchesin2025}.
+butterfly/FFT architectures~\cite{tian2022,feng2022}, sine-cosine fractal (SCF)
+decompositions~\cite{basani2023}, braided meshes~\cite{marchesin2025}, and
+diamond meshes~\cite{shokraneh2020,mojaver2023}.
 Each proposal reports advantages using different metrics, noise models, and benchmarks,
 making direct comparison difficult.
 
@@ -177,7 +183,7 @@ also growing as approximately $O(N^2)$.  Table~\ref{tab:crossings} reports exact
 \subsection{Topology descriptions}
 \label{sec:topos}
 
-We evaluate four MZI mesh topologies, summarized in Table~\ref{tab:topologies} and
+We evaluate six MZI mesh topologies, summarized in Table~\ref{tab:topologies} and
 illustrated in Fig.~\ref{fig:schematics}.
 
 \begin{table}[H]
@@ -192,6 +198,8 @@ Topology & MZIs & Depth & Universal & Ref.\ \\
 Clements     & $N(N{-}1)/2$           & $N$         & Yes & \cite{clements2016} \\
 Reck         & $N(N{-}1)/2$           & $2N{-}3$    & Yes & \cite{reck1994} \\
 Butterfly    & $\tfrac{N}{2}\log_2 N$ & $\log_2 N$  & No  & \cite{tian2022} \\
+Braid        & $N(N{-}1)/2$           & $N{-}1$     & Yes & \cite{marchesin2025} \\
+Diamond      & ${\sim}(N{-}1)^2$      & $2N{-}3$    & Yes & \cite{shokraneh2020} \\
 SCF Fractal  & $N(N{-}1)/2$           & $N{-}1$     & Yes & \cite{basani2023} \\
 \bottomrule
 \end{tabular}
@@ -222,10 +230,16 @@ construction that recursively builds $N$-port unitaries from smaller blocks.
 Universal, depth $N{-}1$, with a recursive structure that requires waveguide
 crossings at each level of the fractal hierarchy.
 
-We exclude the Diamond mesh~\cite{shokraneh2020,mojaver2023}, which has zero
-crossings but optical depth ${\sim}2N{-}3$ (Reck class) with $(N{-}1)^2$ MZIs,
-an over-parameterized, monitoring-oriented architecture occupying a different
-design category than the decomposition topologies compared here.
+\textbf{Braid}~\cite{marchesin2025}: a braided mesh that interleaves MZI layers
+with crossing layers that redistribute waveguides, achieving perfectly balanced
+path lengths (every port traverses the same number of MZIs and crossings).
+Universal, depth $N{-}1$, same MZI count as Clements.  Requires waveguide crossings
+at each braid stage.
+
+\textbf{Diamond}~\cite{shokraneh2020,mojaver2023}: a symmetric mesh with
+${\sim}(N{-}1)^2$ MZIs (over-parameterized relative to Clements/Reck's
+$N(N{-}1)/2$), providing extra degrees of freedom and more balanced paths.
+Universal, depth $2N{-}3$ (same as Reck).  Zero waveguide crossings.
 
 \begin{figure*}[t]
 \centering
@@ -396,13 +410,14 @@ design category than the decomposition topologies compared here.
 \end{scope}
 
 \end{tikzpicture}
-\caption{Schematic wiring diagrams for the four topologies at $N{=}8$.  Each small
-rectangle represents one MZI.  (a)~Clements: rectangular mesh with alternating
-even/odd columns, depth~8.  (b)~Reck: triangular mesh, depth~13.
+\caption{Schematic wiring diagrams for four of the six topologies at $N{=}8$.
+Each small rectangle represents one MZI.  (a)~Clements: rectangular mesh with
+alternating even/odd columns, depth~8.  (b)~Reck: triangular mesh, depth~13.
 (c)~Butterfly/FFT: logarithmic depth (3 layers), with dashed lines indicating
 non-adjacent waveguide connections that require physical crossings.
 (d)~SCF Fractal: recursive sine-cosine construction, depth~7, also requiring
-crossings at the fractal merge stages.}
+crossings at the fractal merge stages.  Braid and Diamond schematics are
+available in~\cite{marchesin2025} and~\cite{shokraneh2020} respectively.}
 \label{fig:schematics}
 \end{figure*}
 
@@ -485,10 +500,10 @@ CIFAR-10      &  70.8 &  86.1 \\
 \section{Results}
 \label{sec:results}
 
-\subsection{$N{=}16$: Pareto analysis across four topologies}
+\subsection{$N{=}16$: Pareto analysis across six topologies}
 \label{sec:n16}
 
-Table~\ref{tab:n16} reports accuracy and robustness for all four topologies at
+Table~\ref{tab:n16} reports accuracy and robustness for all six topologies at
 $N{=}16$ across four datasets, with per-MZI insertion loss of 0.2\,dB and no
 crossing loss.  Crossing loss sensitivity is analyzed separately in
 Table~\ref{tab:xsweep}.  All values are mean $\pm$ standard deviation
@@ -509,14 +524,19 @@ Topology & Acc & Rob & Acc & Rob & Acc & Rob & Acc & Rob \\
 Butterfly    & 84.3$\pm$1.7 & 0.377 & 81.5$\pm$0.2 & 0.362 & 92.7$\pm$0.1 & 0.342 & 40.5$\pm$0.3 & 0.391 \\
 Clements     & 82.7$\pm$0.9 & 0.208 & 80.6$\pm$0.4 & 0.221 & 91.7$\pm$0.6 & 0.169 & 39.6$\pm$0.3 & 0.287 \\
 Reck         & 83.6$\pm$2.3 & 0.252 & 81.0$\pm$0.2 & 0.290 & 92.1$\pm$0.1 & 0.245 & 40.3$\pm$0.5 & 0.300 \\
+Braid        & 83.0$\pm$1.5 & 0.209 & 80.3$\pm$0.2 & 0.209 & 91.6$\pm$0.4 & 0.160 & 39.5$\pm$0.2 & 0.283 \\
+Diamond      & 81.3$\pm$0.9 & 0.172 & 79.4$\pm$0.3 & 0.179 & 90.4$\pm$0.4 & 0.134 & 38.5$\pm$0.3 & 0.276 \\
 SCF Fractal  & 84.7$\pm$0.9 & 0.210 & 79.9$\pm$0.2 & 0.209 & 91.3$\pm$0.4 & 0.166 & 39.3$\pm$0.3 & 0.285 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-At $N{=}16$, accuracy differences among topologies are modest (within 2\,pp on
-Vowel, within 1.4\,pp on MNIST), consistent with the observation that all four
+At $N{=}16$, accuracy differences among topologies are modest (within 3.4\,pp on
+Vowel, within 2.3\,pp on MNIST), consistent with the observation that all six
 topologies have sufficient expressivity for these tasks at small mesh size.
+Braid tracks Clements within 1\,pp across all datasets despite its crossings.
+Diamond is consistently the lowest performer, $1$--$2$\,pp below Clements,
+reflecting its $2N{-}3 = 29$ depth (the deepest tested).
 However, robustness differences are already substantial: butterfly achieves
 $1.8\times$ the robustness of Clements on Vowel (0.377 vs.\ 0.208) and
 $2.0\times$ on MNIST (0.342 vs.\ 0.169), a direct consequence of its
@@ -531,7 +551,7 @@ for Clements, a $15\times$ cost reduction with comparable or superior accuracy.
 \label{sec:n64}
 
 The advantage of shallow topologies grows rapidly with $N$.
-Table~\ref{tab:n64} reports results for all four topologies at $N{=}64$ on Vowel
+Table~\ref{tab:n64} reports results for all six topologies at $N{=}64$ on Vowel
 and Fashion-MNIST.
 
 \begin{table}[H]
@@ -549,6 +569,8 @@ Topology & Acc (\%) & Rob & Cost & Acc (\%) & Rob \\
 Butterfly    & 78.0$\pm$3.5 & 0.393 &     1\,152 & 83.7$\pm$0.3 & 0.275 \\
 Reck         & 81.5$\pm$2.4 & 0.268 & 252\,000   & 81.5$\pm$1.2 & 0.271 \\
 Clements     & 73.9$\pm$1.7 & 0.138 & 129\,024   & 80.1$\pm$1.0 & 0.130 \\
+Braid        & 69.3$\pm$3.3 & 0.151 & 127\,008   & 78.7$\pm$0.7 & 0.132 \\
+Diamond      & 28.3$\pm$3.2 & 0.354 & 492\,250   & 72.7$\pm$0.5 & 0.139 \\
 SCF Fractal  & 63.7$\pm$4.3 & 0.154 & 127\,008   & 78.3$\pm$0.8 & 0.130 \\
 \bottomrule
 \end{tabular}
@@ -560,10 +582,16 @@ cost (1\,152 vs.\ 129\,024).  On Vowel, Reck slightly outperforms butterfly in
 accuracy (81.5\% vs.\ 78.0\%) owing to its path-length distribution (discussed in
 Section~\ref{sec:discussion}), but at $219\times$ higher cost.
 
-SCF Fractal's accuracy drops to 63.7\% on Vowel, substantially below all other
-topologies.  This is attributable to the combination of its $O(N)$ depth (comparable
-to Clements) and its additional crossing losses (408 total crossings at $N{=}16$,
-growing to 12\,384 at $N{=}64$).
+Braid achieves 69.3\% on Vowel, worse than Clements (73.9\%) despite its
+perfectly balanced paths, because its $N{-}1 = 63$ depth is comparable to
+Clements and its 5\,766 crossings add further loss.
+Diamond collapses to 28.3\% on Vowel, barely above random (9.1\%), because
+its $2N{-}3 = 125$ depth accumulates $25.0$\,dB of insertion loss.  Its
+over-parameterization (3\,938 MZIs vs.\ 2\,016 for Clements) cannot compensate.
+SCF Fractal's accuracy drops to 63.7\% on Vowel, below all other
+topologies except Diamond.  This is attributable to the combination of its
+$O(N)$ depth (comparable to Clements) and its additional crossing losses
+(408 total crossings at $N{=}16$, growing to 12\,384 at $N{=}64$).
 
 Table~\ref{tab:bvsc} extends the butterfly--Clements comparison to all four datasets
 at $N{=}64$.
@@ -638,7 +666,7 @@ meshes (Clements and Reck have zero crossings at all sizes).
 \centering
 \caption{Waveguide crossing statistics.  Total crossings (Total X), mean crossings
 per port (X/port), and crossings per port per layer (X/port/layer).
-Clements and Reck: 0 crossings at all sizes (omitted).}
+Clements, Reck, and Diamond: 0 crossings at all sizes (omitted).}
 \label{tab:crossings}
 \begin{tabular}{llrrrrc}
 \toprule
@@ -648,6 +676,11 @@ Butterfly &  16 &   32 &  4 &     264 &  16.5 &  4.12 \\
 Butterfly &  32 &   80 &  5 &   1\,248 &  39.0 &  7.80 \\
 Butterfly &  64 &  192 &  6 &   5\,472 &  85.5 & 14.25 \\
 Butterfly & 128 &  448 &  7 &  23\,040 & 180.0 & 25.71 \\
+\midrule
+Braid &  16 &  120 & 15 &     294 &  18.4 &  1.22 \\
+Braid &  32 &  496 & 31 &   1\,350 &  42.2 &  1.36 \\
+Braid &  64 & 2\,016 & 63 &   5\,766 &  90.1 &  1.43 \\
+Braid & 128 & 8\,128 & 127 &  23\,814 & 186.0 &  1.47 \\
 \midrule
 SCF Fractal &  16 &  120 & 15 &     408 &  25.5 &  1.70 \\
 SCF Fractal &  32 &  496 & 31 &   2\,352 &  73.5 &  2.37 \\
@@ -741,19 +774,24 @@ Configuration & Acc (\%) & Cost & Crossings \\
 Butterfly (0.02\,dB cross.) & $76.6 \pm 2.1$ &    3\,136 & 23\,040 \\
 Butterfly (no cross.)       & $79.8 \pm 2.1$ &    3\,136 &      0  \\
 Clements                    & $26.3 \pm 2.9$ & 1\,040\,384 &      0  \\
+Braid (0.02\,dB cross.)    & $11.4 \pm 1.1$ & 1\,032\,256 & 23\,814 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 SCF Fractal is omitted at $N{=}128$: its $O(N^2)$ crossing count would exceed
 40\,000, and its depth ($N{-}1 = 127$) matches Clements, so similar or worse
-collapse is expected.  Reck (depth $2N{-}3 = 253$) is likewise omitted.
+collapse is expected.  Reck (depth $2N{-}3 = 253$) and Diamond (depth $253$)
+are likewise omitted.
 
 At $N{=}128$, the depth wall becomes catastrophic for Clements: its 128-layer
 depth causes cumulative insertion loss of $128 \times 0.2 = 25.6$\,dB, effectively
 extinguishing the optical signal.  The resulting $26.3 \pm 2.9$\% accuracy is barely
 above the random baseline ($1/11 = 9.1$\% for 11-class Vowel), indicating that the mesh is no
-longer performing meaningful computation.
+longer performing meaningful computation.  Braid collapses even further to
+$11.4 \pm 1.1$\%, despite its perfectly balanced paths, because its 23\,814
+crossings add ${\sim}3.6$\,dB of additional loss on top of the $25.4$\,dB
+from its 127 MZI layers.
 
 Butterfly at $N{=}128$ retains $76.6 \pm 2.1$\% accuracy ($79.8 \pm 2.1$\% without
 crossing loss), traversing only $\log_2 128 = 7$ MZI layers (1.4\,dB cumulative
@@ -880,6 +918,17 @@ $N{=}128$, which amplify noise-induced fidelity loss in proportion to depth.
 The depth wall manifests as a sharp transition: Clements accuracy on Vowel is
 73.9\% at $N{=}64$ but collapses to $26.3 \pm 2.9$\% at $N{=}128$, a ${\sim}48$\,pp
 drop, while butterfly drops only from 78.0\% to $76.6 \pm 2.1$\% (within seed variance).
+Braid and Diamond provide controlled tests of the depth thesis.  Braid has
+depth $N{-}1$ (one layer less than Clements) with perfectly balanced paths,
+yet collapses to $11.4$\% at $N{=}128$ (worse than Clements's $26.3$\%)
+because its crossings add loss on top of comparable depth.  Diamond has depth
+$2N{-}3$ (same as Reck) with zero crossings and more MZIs, yet collapses
+already at $N{=}64$ ($28.3$\%) while Reck survives ($81.5$\%), because
+Diamond's symmetric structure forces every port through the full depth while
+Reck's triangular structure allows the network to route information through
+shorter paths.  Neither path balancing (Braid) nor over-parameterization
+(Diamond) can compensate for depth.
+
 Industry practice corroborates this finding: the largest commercial photonic
 processors, such as Lightmatter's $128 \times 128$ Envise chip~\cite{ahmed2025},
 deliberately avoid coherent unitary MZI meshes in favor of $O(1)$-depth
@@ -921,6 +970,18 @@ some input channels experience much less loss than others.  The network can
 learn to route information preferentially through the shorter paths.  However,
 this comes at $219\times$ higher hardware cost (252\,000 vs.\ 1\,152) and lower
 robustness (0.268 vs.\ 0.393).
+
+Diamond provides a natural control experiment for this hypothesis.  Diamond
+has the same depth class as Reck ($2N{-}3$), more MZIs (${\sim}(N{-}1)^2$),
+zero crossings, and more symmetric paths, yet it collapses to $28.3$\% at
+$N{=}64$ while Reck achieves $81.5$\%.  This confirms that Reck's advantage
+comes specifically from its path-length \emph{asymmetry}: the triangular
+structure acts as a natural form of dropout, with short paths carrying useful
+signal while long paths are effectively pruned by insertion loss.  Diamond's
+symmetric structure forces every port through the full depth, eliminating this
+escape route.  Path-length variance is an advantage under insertion loss, not
+just a liability, inverting the conventional wisdom that balanced paths are
+always preferable.
 
 \subsection{Crossing loss scaling}
 
@@ -978,8 +1039,8 @@ simulation results and should be validated experimentally.}
 \toprule
 Use case & Recommendation & Rationale \\
 \midrule
-$N \leq 16$, any task & Any topology & Accuracy differences are within 2\,pp; universality
-  is not needed for classification at this scale. \\
+$N \leq 16$, any task & Any topology & Accuracy differences are within 3.4\,pp; universality
+  is not needed for classification at this scale (avoid Diamond if depth budget is tight). \\
 $N{=}32$--64, classification & Butterfly & $3$--$5$\,pp accuracy advantage, $2\times$
   robustness, $100\times$ lower hardware cost vs.\ Clements. \\
 $N \geq 128$, classification & Butterfly & Only viable option; universal topologies
@@ -1076,7 +1137,7 @@ topologies, noise models, and experimental validation.
 \section{Conclusion}
 \label{sec:conclusion}
 
-We have presented a simulation-based Pareto comparison of four MZI mesh topologies
+We have presented a simulation-based Pareto comparison of six MZI mesh topologies
 for photonic neural networks, evaluated from $N{=}4$ to $N{=}128$ with per-MZI
 insertion loss, waveguide crossing loss, and Monte Carlo phase noise on four
 classification datasets.
@@ -1095,10 +1156,12 @@ It is more problematic for SCF fractal, which combines deep paths with high
 crossing counts.
 
 These results suggest that PNN architectures designed for large-scale deployment
-should prioritize depth reduction over universality.  The butterfly topology's
-non-universality does not impair classification performance at any tested scale,
-while its logarithmic depth provides structural resilience that cannot be matched
-by training strategies applied to deep meshes.
+should prioritize depth reduction over universality, path balancing, or
+increased parameter count.  The butterfly topology's non-universality does not
+impair classification performance at any tested scale, while its logarithmic
+depth provides structural resilience that cannot be matched by training
+strategies, balanced paths (braid), or over-parameterization (diamond)
+applied to deep meshes.
 
 All results are from simulation.  Experimental validation on fabricated photonic
 chips is the essential next step.
