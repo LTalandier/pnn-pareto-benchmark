@@ -204,11 +204,17 @@ Clements     & $N(N{-}1)/2$           & $N$         & Yes & \cite{clements2016} 
 Reck         & $N(N{-}1)/2$           & $2N{-}3$    & Yes & \cite{reck1994} \\
 Butterfly    & $\tfrac{N}{2}\log_2 N$ & $\log_2 N$  & No  & \cite{tian2022} \\
 Braid        & $N(N{-}1)/2$           & $N{-}1$     & Yes & \cite{marchesin2025} \\
-Diamond      & ${\sim}(N{-}1)^2$      & $2N{-}3$    & Yes & \cite{shokraneh2020} \\
+Diamond\footnotemark & ${\sim}(N{-}1)^2$ & $2N{-}3$   & Yes & \cite{shokraneh2020} \\
 SCF Fractal  & $N(N{-}1)/2$           & $N{-}1$     & Yes & \cite{basani2023} \\
 \bottomrule
 \end{tabular}
 \end{table}
+\footnotetext{Our Diamond implementation uses $2N{-}3$ layers of alternating
+even/odd adjacent-pair couplings, yielding $(N{-}1)^2 - (N/2{-}1)$ MZIs
+(e.g., 3\,938 at $N{=}64$ vs.\ $(N{-}1)^2 = 3\,969$).  The original
+Shokraneh~\textit{et al.}\ construction achieves exactly $(N{-}1)^2$ through
+a different layer arrangement; the ${\sim}1$\% shortfall does not affect
+our conclusions.}
 
 \textbf{Clements}~\cite{clements2016}: a rectangular mesh of alternating even/odd
 columns of adjacent-pair MZIs.  Universal, depth $N$, widely used in experimental
@@ -629,7 +635,9 @@ limitation specific to any topology.
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\columnwidth]{results/figures/robustness_N64_fmnist.png}
-\caption{Accuracy vs.\ phase-noise level ($\sigma$) at $N{=}64$ on Fashion-MNIST.
+\caption{Accuracy vs.\ phase-noise level ($\sigma$) at $N{=}64$ on Fashion-MNIST
+(braid and diamond omitted; their depth-class behavior tracks Clements/SCF
+and Reck respectively).
 Butterfly degrades most gracefully, retaining 67.1\% at $\sigma = 0.05$ where
 Clements has already fallen to 32.0\%.}
 \label{fig:rob_fmnist}
@@ -638,7 +646,8 @@ Clements has already fallen to 32.0\%.}
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\columnwidth]{results/figures/robustness_N64_vowel.png}
-\caption{Accuracy vs.\ phase-noise level ($\sigma$) at $N{=}64$ on Vowel.
+\caption{Accuracy vs.\ phase-noise level ($\sigma$) at $N{=}64$ on Vowel
+(braid and diamond omitted; see note in Fig.~\ref{fig:rob_fmnist}).
 Similar pattern: butterfly and Reck degrade gradually while Clements and SCF Fractal
 exhibit sharp cliffs between $\sigma = 0.02$ and $\sigma = 0.05$.}
 \label{fig:rob_vowel}
