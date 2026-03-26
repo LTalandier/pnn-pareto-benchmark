@@ -24,18 +24,24 @@ COLORS = {
     'clements':    '#185FA5',
     'reck':        '#534AB7',
     'butterfly':   '#1D9E75',
+    'braid':       '#E68A00',
+    'diamond':     '#8B4513',
     'scf_fractal': '#D4537E',
 }
 MARKERS = {
     'clements':    'o',
     'reck':        's',
     'butterfly':   '^',
+    'braid':       'D',
+    'diamond':     'v',
     'scf_fractal': '*',
 }
 LABELS = {
     'clements':    'Clements',
     'reck':        'Reck',
     'butterfly':   'Butterfly',
+    'braid':       'Braid',
+    'diamond':     'Diamond',
     'scf_fractal': 'SCF Fractal',
 }
 
@@ -71,6 +77,8 @@ NOISE_N64_FMNIST = {
     'butterfly':   [83.7, 82.8, 80.2, 67.1, 44.6, 31.1, 23.0],
     'reck':        [81.5, 80.4, 77.3, 59.8, 37.9, 27.5, 22.1],
     'clements':    [80.1, 75.5, 64.0, 32.0, 15.3, 11.4, 10.4],
+    'braid':       [78.7, 74.9, 64.0, 31.3, 14.2, 11.2, 10.4],
+    'diamond':     [71.4, 60.3, 44.2, 21.4, 12.2, 10.4, 10.1],
     'scf_fractal': [78.3, 74.9, 64.9, 30.3, 13.5, 10.8, 10.2],
 }
 
@@ -78,6 +86,8 @@ NOISE_N64_VOWEL = {
     'butterfly':   [78.0, 77.5, 76.3, 67.7, 50.6, 37.9, 30.6],
     'reck':        [81.5, 80.2, 77.6, 63.0, 42.9, 29.5, 21.8],
     'clements':    [73.9, 69.5, 61.7, 36.6, 18.8, 12.7, 10.2],
+    'braid':       [65.7, 65.0, 61.1, 41.8, 20.9, 12.6, 10.3],
+    'diamond':     [28.9, 27.9, 25.8, 19.6, 12.9, 10.2, 10.0],
     'scf_fractal': [63.7, 63.0, 59.7, 43.8, 21.6, 12.5,  9.7],
 }
 
@@ -98,12 +108,16 @@ ACC_N64 = {
         'butterfly':   (83.7, 0.3),
         'reck':        (81.5, 1.2),
         'clements':    (80.1, 1.0),
+        'braid':       (78.7, 0.7),
+        'diamond':     (72.7, 0.5),
         'scf_fractal': (78.3, 0.8),
     },
     'vowel': {
         'butterfly':   (78.0, 3.5),
         'reck':        (81.5, 2.4),
         'clements':    (73.9, 1.7),
+        'braid':       (69.3, 3.3),
+        'diamond':     (28.3, 3.2),
         'scf_fractal': (63.7, 4.3),
     },
     'mnist': {
@@ -157,10 +171,10 @@ CROSSING_COUNTS = {
 # ═══════════════════════════════════════════════════════════════════════
 
 def fig2_robustness_n64_fmnist():
-    """Fig 2: Robustness curves N=64 Fashion-MNIST (all 4 topologies)."""
+    """Fig 2: Robustness curves N=64 Fashion-MNIST (all 6 topologies)."""
     fig, ax = plt.subplots(1, 1, figsize=(8, 6))
 
-    for topo in ['butterfly', 'reck', 'clements', 'scf_fractal']:
+    for topo in ['butterfly', 'reck', 'clements', 'braid', 'diamond', 'scf_fractal']:
         means = np.array(NOISE_N64_FMNIST[topo])
         ax.plot(SIGMAS, means, color=COLORS[topo], marker=MARKERS[topo],
                 markersize=7, label=LABELS[topo], linewidth=1.8)
@@ -180,10 +194,10 @@ def fig2_robustness_n64_fmnist():
 
 
 def fig3_robustness_n64_vowel():
-    """Fig 3: Robustness curves N=64 vowel (all 4 topologies)."""
+    """Fig 3: Robustness curves N=64 vowel (all 6 topologies)."""
     fig, ax = plt.subplots(1, 1, figsize=(8, 6))
 
-    for topo in ['butterfly', 'reck', 'clements', 'scf_fractal']:
+    for topo in ['butterfly', 'reck', 'clements', 'braid', 'diamond', 'scf_fractal']:
         means = np.array(NOISE_N64_VOWEL[topo])
         ax.plot(SIGMAS, means, color=COLORS[topo], marker=MARKERS[topo],
                 markersize=7, label=LABELS[topo], linewidth=1.8)

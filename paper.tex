@@ -636,21 +636,21 @@ limitation specific to any topology.
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\columnwidth]{results/figures/robustness_N64_fmnist.png}
-\caption{Accuracy vs.\ phase-noise level ($\sigma$) at $N{=}64$ on Fashion-MNIST
-(braid and diamond omitted; their depth-class behavior tracks Clements/SCF
-and Reck respectively).
-Butterfly degrades most gracefully, retaining 67.1\% at $\sigma = 0.05$ where
-Clements has already fallen to 32.0\%.}
+\caption{Accuracy vs.\ phase-noise level ($\sigma$) at $N{=}64$ on Fashion-MNIST,
+all six topologies.  Butterfly degrades most gracefully, retaining 67.1\% at
+$\sigma = 0.05$ where Clements has already fallen to 32.0\%.  Diamond starts
+lowest (71.4\%) due to its $2N{-}3 = 125$ depth.  Braid tracks Clements/SCF.}
 \label{fig:rob_fmnist}
 \end{figure}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\columnwidth]{results/figures/robustness_N64_vowel.png}
-\caption{Accuracy vs.\ phase-noise level ($\sigma$) at $N{=}64$ on Vowel
-(braid and diamond omitted; see note in Fig.~\ref{fig:rob_fmnist}).
-Similar pattern: butterfly and Reck degrade gradually while Clements and SCF Fractal
-exhibit sharp cliffs between $\sigma = 0.02$ and $\sigma = 0.05$.}
+\caption{Accuracy vs.\ phase-noise level ($\sigma$) at $N{=}64$ on Vowel,
+all six topologies.  Similar pattern: butterfly and Reck degrade gradually
+while Clements, braid, and SCF Fractal exhibit sharp cliffs between
+$\sigma = 0.02$ and $\sigma = 0.05$.  Diamond is near-collapsed from the
+start (28.9\%).}
 \label{fig:rob_vowel}
 \end{figure}
 
