@@ -156,10 +156,81 @@ def butterfly_topology(N):
 
 
 
-# Diamond and Braid topologies removed — correct implementations
-# require non-trivial wiring patterns from the original papers
-# (Shokraneh et al. 2020, Marchesin et al. 2025).
-# To be added after paper review.
+def braid_topology(N):
+    """
+    Braid mesh (Marchesin et al., Opt. Express 33, 2227, 2025).
+    N(N-1)/2 MZIs, depth N-1. Universal.
+    Perfectly balanced paths: every port traverses the same number of MZIs.
+
+    Construction: N-1 stages. Each stage couples even-indexed adjacent pairs
+    (0,1), (2,3), ... through MZIs. Between stages, a crossing permutation
+    swaps odd-indexed adjacent pairs (1,2), (3,4), ... rearranging which
+    logical signals sit on which physical waveguide.
+
+    The topology generator tracks a wire_map: physical wire -> logical port.
+    MZI connections are recorded in logical port space so the crossing model
+    in PhotonicMesh correctly counts non-adjacent spans.
+
+    Requires N even and N >= 4.
+    """
+    assert N >= 4 and N % 2 == 0, f"Braid requires even N >= 4, got N={N}"
+    layers = []
+    # wire_map[physical_pos] = logical_port
+    wire_map = list(range(N))
+
+    for stage in range(N - 1):
+        # MZI layer: couple physical pairs (0,1), (2,3), ...
+        layer = []
+        for k in range(0, N, 2):
+            pi = wire_map[k]
+            pj = wire_map[k + 1]
+            # Ensure consistent ordering (lower port first)
+            layer.append((min(pi, pj), max(pi, pj)))
+        layers.append(layer)
+
+        # Crossing permutation (skip after last stage):
+        # swap physical pairs (1,2), (3,4), ...
+        if stage < N - 2:
+            for i in range(1, N - 1, 2):
+                wire_map[i], wire_map[i + 1] = wire_map[i + 1], wire_map[i]
+
+    return layers
+
+
+def diamond_topology(N):
+    """
+    Diamond mesh (Shokraneh et al., Opt. Express 28, 23495, 2020;
+    Mojaver et al., Opt. Express 31, 23851, 2023).
+    ~(N-1)^2 MZIs, depth 2N-3. Universal.
+    Zero waveguide crossings (adjacent-only couplings).
+
+    The Diamond mesh extends the Clements rectangular structure from N
+    to 2N-3 layers of alternating even/odd adjacent-pair couplings,
+    creating a more symmetric topology with balanced path lengths.
+    Every port traverses approximately the same number of MZIs,
+    unlike Clements where edge ports see fewer layers.
+
+    The over-parameterization (more MZIs than Clements/Reck's N(N-1)/2)
+    provides additional degrees of freedom for optimization, improving
+    tolerance to phase errors and insertion loss.
+    """
+    assert N >= 2, f"Diamond requires N >= 2, got N={N}"
+    if N == 2:
+        return [[(0, 1)]]
+
+    layers = []
+    total_layers = 2 * N - 3
+    for col in range(total_layers):
+        layer = []
+        if col % 2 == 0:
+            for i in range(0, N - 1, 2):
+                layer.append((i, i + 1))
+        else:
+            for i in range(1, N - 1, 2):
+                layer.append((i, i + 1))
+        if layer:
+            layers.append(layer)
+    return layers
 
 
 def scf_fractal_topology(N):
@@ -233,6 +304,8 @@ TOPOLOGIES = {
     'clements': clements_topology,
     'reck': reck_topology,
     'butterfly': butterfly_topology,
+    'braid': braid_topology,
+    'diamond': diamond_topology,
     'scf_fractal': scf_fractal_topology,
 }
 
