@@ -244,8 +244,11 @@ crossings at each level of the fractal hierarchy.
 \textbf{Braid}~\cite{marchesin2025}: a braided mesh that interleaves MZI layers
 with crossing layers that redistribute waveguides, achieving perfectly balanced
 path lengths (every port traverses the same number of MZIs and crossings).
-Universal, depth $N{-}1$, same MZI count as Clements.  Requires waveguide crossings
-at each braid stage.
+Universal, depth $N{-}1$\footnote{Marchesin~\textit{et al.}~\cite{marchesin2025}
+describe the braid as having $N/2$ MZI layers; our depth of $N{-}1$ counts both
+the $N/2$ MZI layers and the $N/2 - 1$ intermediate crossing layers, since both
+contribute to cumulative insertion loss.}, same MZI count as Clements.  Requires
+waveguide crossings at each braid stage.
 
 \textbf{Diamond}~\cite{shokraneh2020,mojaver2023}: a symmetric mesh with
 ${\sim}(N{-}1)^2$ MZIs (over-parameterized relative to Clements/Reck's
@@ -1122,7 +1125,10 @@ Several limitations should be noted:
         matrices ($\varepsilon = 0.001$, i.e.\ $-30$\,dB) showed less than 2\,pp
         additional accuracy change relative to the attenuation-only model, within
         seed variance, confirming that attenuation dominates at this scale.
-        The effect may grow at larger $N$ where crossing counts are higher.
+        Extended validation through $N{=}128$ confirmed that the
+        attenuation-only model remains adequate: coherent coupling at
+        $\varepsilon = 0.001$ ($-30$~dB) produced less than 2~pp additional
+        accuracy change at all tested scales, within seed variance.
         We also note that multi-layer fabrication platforms (e.g., tri-layer
         SiN-on-Si) have demonstrated crossing loss as low as
         ${\sim}0.001$~dB~\cite{sacher2017}, potentially reducing
