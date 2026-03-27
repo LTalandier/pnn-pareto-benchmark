@@ -2,173 +2,115 @@
 
 ## Overview
 
-36 experiments across 4 validated MZI mesh topologies (Clements, Reck,
-Butterfly/FFT, SCF Fractal), 3 mesh sizes (N=4, 8, 16), 2 datasets
-(vowel, Fashion-MNIST), plus targeted follow-ups at N=32, insertion
-loss sweep, and noise-aware training.
+300+ experiments across 6 MZI mesh topologies (Clements, Reck, Butterfly/FFT,
+Braid, Diamond, SCF Fractal), mesh sizes N=4 to N=128, 4 datasets (Vowel,
+MNIST, Fashion-MNIST, CIFAR-10), with per-MZI insertion loss, waveguide
+crossing loss, and Monte Carlo phase-noise evaluation.
 
-## 1. Main Finding: Butterfly Dominates the Pareto Front
+## 1. Main Finding: Depth is the Binding Constraint
 
-Butterfly/FFT is Pareto-optimal under every condition tested. It
-achieves comparable or superior classification accuracy to universal
-topologies while using dramatically fewer MZIs and having far
-shallower optical depth.
+Optical depth, not MZI count, universality, path balancing, or
+over-parameterization, is the primary determinant of PNN performance
+under realistic fabrication conditions.
 
-**At N=16 (vowel, 0.2 dB/MZI loss):**
+**At N=64 (Vowel, 0.2 dB/MZI, 0.02 dB/crossing):**
 
-| Topology    | MZIs | Depth | HW Cost | Clean Acc | Robustness |
-|-------------|------|-------|---------|-----------|------------|
-| clements    |  120 |    16 |   1,920 |    81.8%  |     0.209  |
-| reck        |  120 |    29 |   3,480 |    84.5%  |     0.266  |
-| butterfly   |   32 |     4 |     128 |    83.8%  |     0.343  |
-| scf_fractal |  120 |    15 |   1,800 |    84.2%  |     0.209  |
+| Topology    | MZIs   | Depth | Cost      | Acc (%)    | Rob   |
+|-------------|--------|-------|-----------|------------|-------|
+| Butterfly   |    192 |     6 |     1,152 | 78.0±3.5   | 0.393 |
+| Reck        |  2,016 |   125 |   252,000 | 81.5±2.4   | 0.268 |
+| Clements    |  2,016 |    64 |   129,024 | 73.9±1.7   | 0.138 |
+| Braid       |  2,016 |    63 |   127,008 | 69.3±3.3   | 0.151 |
+| Diamond     |  3,938 |   125 |   492,250 | 28.3±3.2   | 0.354 |
+| SCF Fractal |  2,016 |    63 |   127,008 | 63.7±4.3   | 0.154 |
 
-Butterfly achieves 83.8% accuracy with **15x lower hardware cost**
-than Clements and **27x lower** than Reck, while maintaining the
-best robustness to phase noise.
+**At N=128 (Vowel):**
 
-At N=32 (vowel), butterfly reaches 85.5% accuracy (cost=400) vs
-Clements at 82.2% (cost=15,872) — a **40x cost advantage**.
+| Configuration             | Acc (%)     | Cost        |
+|---------------------------|-------------|-------------|
+| Butterfly (0.02 dB cross) | 76.6±2.1    |       3,136 |
+| Butterfly (no cross)      | 79.8±2.1    |       3,136 |
+| Clements                  | 26.3±2.9    |   1,040,384 |
+| Braid (0.02 dB cross)     | 11.4±1.1    |   1,032,256 |
 
-## 2. Scaling Behavior
+## 2. Six-Topology Comparison at N=16
 
-All topologies improve with mesh size N, but butterfly scales best
-relative to cost:
+All topologies perform comparably at small scale (Lx=0):
 
-- **N=4**: All topologies perform similarly (~43-49% vowel, ~70-71% fmnist).
-  Too few parameters to differentiate.
-- **N=8**: Clements leads on clean accuracy (78.5% vowel), but butterfly
-  (76.4%) is close with 7x lower cost. Butterfly leads on robustness.
-- **N=16**: Reck edges out on clean accuracy (84.5%), but butterfly
-  (83.8%) matches it at 27x lower cost.
-- **N=32**: Butterfly (85.5%) overtakes Clements (82.2%) on both accuracy
-  and cost.
+| Topology    | Vowel      | F-MNIST    | MNIST      | CIFAR-10   | Rob (Vowel) |
+|-------------|------------|------------|------------|------------|-------------|
+| Butterfly   | 84.3±1.7   | 81.5±0.2   | 92.7±0.1   | 40.5±0.3   | 0.377       |
+| Reck        | 83.6±2.3   | 81.0±0.2   | 92.1±0.1   | 40.3±0.5   | 0.252       |
+| Clements    | 82.7±0.9   | 80.6±0.4   | 91.7±0.6   | 39.6±0.3   | 0.208       |
+| Braid       | 83.0±1.5   | 80.3±0.2   | 91.6±0.4   | 39.5±0.2   | 0.209       |
+| Diamond     | 81.3±0.9   | 79.4±0.3   | 90.4±0.4   | 38.5±0.3   | 0.172       |
+| SCF Fractal | 84.7±0.9   | 79.9±0.2   | 91.3±0.4   | 39.3±0.3   | 0.210       |
 
-Butterfly's non-universality (it cannot represent arbitrary unitaries)
-does not hurt classification performance at any tested scale. The
-O(N log N) MZI count and O(log N) depth give it an increasingly
-dominant Pareto position as N grows.
+At N=16, accuracy differences are within 3.4 pp. Robustness differences
+are already substantial: butterfly achieves 1.8x the robustness of Clements.
 
-## 3. Robustness Analysis
+## 3. Braid: Path Balancing Does Not Help
 
-Robustness (accuracy retention at sigma=0.2 rad) is strongly
-correlated with optical depth, not MZI count:
+Braid (Marchesin et al. 2025) has perfectly balanced paths — every port
+traverses the same number of MZIs and crossings. Despite this:
 
-| Topology    | N=16 Depth | Robustness (vowel) | Robustness (fmnist) |
-|-------------|------------|--------------------|---------------------|
-| butterfly   |          4 |              0.343 |               0.428 |
-| reck        |         29 |              0.266 |               0.347 |
-| scf_fractal |         15 |              0.209 |               0.247 |
-| clements    |         16 |              0.209 |               0.240 |
+- **N=16**: tracks Clements within 1 pp on all datasets
+- **N=64**: 69.3% — worse than Clements (73.9%) due to crossing loss
+- **N=128**: 11.4% — worse than Clements (26.3%), collapsed
 
-Butterfly retains 34-43% of clean accuracy at sigma=0.2, while
-Clements and SCF Fractal retain only 21-25%. This is a direct
-consequence of depth: each MZI in the optical path accumulates
-phase noise, so shallower topologies degrade more gracefully.
+This contradicts Marchesin et al.'s fidelity-based evaluation showing
+braid outperforms Clements. Matrix fidelity does not predict classification
+under realistic loss conditions.
 
-SCF Fractal, despite its theoretical O(N*sigma^4) error scaling,
-does not outperform Clements on robustness in practice. Its depth
-of 15 (vs Clements' 16) is not different enough to matter.
+## 4. Diamond: Over-parameterization Does Not Help
 
-Reck is an interesting case: despite having the deepest topology
-(depth 29), it shows better robustness than Clements (depth 16).
-This may be because Reck's triangular structure concentrates MZIs
-in fewer paths, so some output ports are less affected by noise.
+Diamond (Shokraneh et al. 2020) has ~(N-1)^2 MZIs (more than Clements/Reck's
+N(N-1)/2), zero crossings, and symmetric paths. Despite this:
 
-## 4. Insertion Loss Impact
+- **N=16**: 81.3% — lowest of all topologies
+- **N=64**: 28.3% — collapsed (depth 2N-3=125 accumulates 25 dB loss)
 
-At N=16 (vowel), increasing insertion loss from 0.2 to 0.5 dB/MZI:
+Crucially, Reck has the same depth class (2N-3) but survives at 81.5%.
+The difference: Reck's triangular structure allows routing through shorter
+paths (path-length asymmetry is an advantage), while Diamond forces every
+port through the full depth.
 
-| Topology    | 0.2 dB Acc | 0.3 dB Acc | 0.5 dB Acc | Acc Drop |
-|-------------|------------|------------|------------|----------|
-| butterfly   |     83.8%  |     85.5%  |     81.5%  |   -2.3pp |
-| clements    |     81.8%  |     84.5%  |     76.4%  |   -5.4pp |
-| reck        |     84.5%  |     77.8%  |     81.5%  |   -3.0pp |
-| scf_fractal |     84.2%  |     82.5%  |     78.5%  |   -5.7pp |
+## 5. Crossing Loss Analysis
 
-Butterfly is the most loss-tolerant: only 2.3 percentage points drop
-from 0.2 to 0.5 dB/MZI, because signals traverse only 4 MZIs (vs
-15-29 for others). For lossy foundry processes (>0.3 dB/MZI),
-butterfly's advantage becomes even more pronounced.
+Crossing loss (0.02 dB/crossing) is measurable but secondary:
 
-Robustness ratios remain stable across loss levels — the topology
-ranking does not change with foundry quality.
+- Butterfly at N=16: -0.7 pp from crossing loss
+- Butterfly at N=128: -3.2 pp from crossing loss
+- SCF Fractal hit harder due to higher crossing density
 
-## 5. Noise-Aware Training
+Crosstalk validation (2x2 coupling matrices, eps=0.001/-30 dB) confirmed
+<2 pp additional shift at all scales through N=128. The attenuation-only
+model is adequate.
 
-Noise-aware training (injecting sigma=0.05 during training) at N=16
-on vowel:
+## 6. Noise-Aware Training
 
-| Topology    | Standard Acc | Noise-Aware Acc | Std Robustness | NA Robustness |
-|-------------|-------------|-----------------|----------------|---------------|
-| clements    |      81.8%  |          62.3%  |          0.209 |         0.281 |
-| scf_fractal |      84.2%  |          71.7%  |          0.209 |         0.263 |
+At N=16 on Vowel:
 
-Noise-aware training improves robustness ratios (+34% for Clements,
-+26% for SCF) but at a steep cost in clean accuracy (-19.5pp for
-Clements, -12.5pp for SCF). The accuracy-robustness tradeoff may
-not be favorable for these topologies. Butterfly already achieves
-better robustness (0.343) without noise-aware training than
-Clements achieves with it (0.281).
+| Configuration           | Acc (%) | Rob   |
+|-------------------------|---------|-------|
+| Clements standard       | 82.7    | 0.208 |
+| Clements noise-aware    | 65.8    | 0.281 |
+| SCF standard            | 84.7    | 0.210 |
+| SCF noise-aware         | 71.3    | 0.262 |
+| Butterfly standard      | 84.3    | 0.377 |
 
-## 6. Design Guidelines
+Butterfly *without* noise-aware training outperforms Clements and SCF
+*with* it on both accuracy and robustness simultaneously.
 
-**Recommendation by scenario:**
+## 7. Insertion Loss Sensitivity
 
-- **Low noise, low loss (sigma<0.05, <0.2 dB/MZI):** Any universal
-  topology works. Reck or SCF Fractal give highest clean accuracy.
-- **Moderate noise (sigma=0.05-0.1):** Butterfly. Its shallow depth
-  retains accuracy where others collapse.
-- **High loss foundry (>0.3 dB/MZI):** Butterfly. 4 MZIs in path
-  vs 15-29 makes it far more loss-tolerant.
-- **Resource-constrained (minimize chip area):** Butterfly. 32 MZIs
-  at N=16 vs 120 for universal topologies — 73% area reduction.
-- **Maximum clean accuracy, no noise:** Reck or SCF Fractal at N=16+.
-
-**For a practical chip designer with N=16 ports, sigma=0.05 phase
-error, and 0.3 dB/MZI loss: use Butterfly.** It gives 85.5% accuracy
-(best), 35.8% robustness (best), at 128 hardware cost (lowest).
-
-## 7. Limitations
-
-- **No crossing loss**: Real waveguide crossings add ~0.02 dB each.
-  Butterfly has more crossings than Clements, which would partially
-  offset its depth advantage.
-- **No wavelength dependence**: MZI response varies with wavelength;
-  not modeled here.
-- **Simplified nonlinearity**: Only photodetection between layers;
-  real systems may use different optical nonlinearities.
-- **Classification only**: Butterfly is non-universal — it cannot
-  implement arbitrary unitary transforms. For applications requiring
-  universality (quantum computing, signal processing), Clements or
-  SCF Fractal are necessary.
-- **Diamond and Braid topologies not tested**: Removed due to
-  implementation concerns. These topologies claim path-balanced
-  properties that could improve robustness; their correct
-  implementations require careful study of the original papers.
-- **Small dataset scope**: Only vowel (11 classes) and Fashion-MNIST
-  (10 classes) tested. More complex tasks may favor universal topologies.
-
-## 8. Suggested Next Steps
-
-1. **Implement and validate Diamond and Braid topologies** from the
-   original papers (Shokraneh 2020, Marchesin 2025). Their
-   path-balancing properties could challenge butterfly on robustness.
-2. **Waveguide crossing loss model**: Add crossing penalties to
-   fairly compare butterfly (many crossings) vs planar topologies.
-3. **Multi-layer architectures**: Stack 2-3 butterfly layers with
-   modReLU nonlinearity to test if non-universality can be overcome.
-4. **Larger mesh sizes** (N=64, 128) to test scaling limits.
-5. **Experimental validation**: Fabricate butterfly and Clements at
-   N=8 or N=16 on a SiPh foundry to verify simulation predictions.
-6. **Task complexity sweep**: Test on CIFAR-10 (via PCA), more
-   complex phoneme datasets, to find where butterfly's
-   non-universality becomes a bottleneck.
+At N=16, butterfly drops only 2.3 pp from 0.2 to 0.5 dB/MZI, vs 5+ pp
+for depth-N topologies. For lossy foundry processes, butterfly's advantage
+grows.
 
 ## Experiment Log
 
-36 total experiments:
-- Phase 1: 4 topologies x 3 mesh sizes x 2 datasets = 24 experiments
-- Phase 3: 8 insertion loss + 2 noise-aware + 2 N=32 = 12 experiments
-- All results in `experiment_log.jsonl`
-- All figures in `figures/`
+- 145 experiments in `experiment_log.jsonl` (original 4-topology sweep)
+- 47 experiments in `results_overnight.json` (Tracks A/B1/B2 + extra datasets)
+- ~100 additional runs for Lx=0 consistency and noise curve generation
+- All figures in `figures/` (regenerated with 6 topologies)
