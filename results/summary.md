@@ -108,9 +108,47 @@ At N=16, butterfly drops only 2.3 pp from 0.2 to 0.5 dB/MZI, vs 5+ pp
 for depth-N topologies. For lossy foundry processes, butterfly's advantage
 grows.
 
+## 8. SDM Channel Equalization
+
+To directly test expressivity vs loss, each topology optimizes its
+phases to invert random SDM fiber channel matrices (coupled-mode model,
+K=50 segments) using L-BFGS. Dual metrics: raw fidelity (0.2 dB/MZI,
+0.02 dB/crossing) and lossless fidelity (expressivity only).
+
+**Crossover point (butterfly vs Clements raw fidelity):**
+
+| N | Crossover sigma* | Butterfly advantage |
+|---|---|---|
+| 4-8 | none | Clements always wins (low loss) |
+| 16 | ~0.05 | sigma < 0.05 only |
+| 32 | ~0.5 | sigma < 0.5 |
+| 64 | ~1.0 | sigma < 1.0 |
+
+**N=64 highlights:**
+
+| Topology | Raw (sigma=0.01) | Raw (sigma=5.0) | Lossless (sigma=5.0) |
+|---|---|---|---|
+| Butterfly | **0.954** | 0.503 | 0.362 |
+| Clements | 0.708 | **0.703** | **0.979** |
+| Reck | 0.739 | 0.639 | 0.804 |
+| Braid | 0.672 | 0.671 | 0.998 |
+| Diamond | 0.559 | 0.559 | 1.000 |
+| SCF Fractal | 0.639 | 0.638 | 0.998 |
+
+Key findings:
+- Butterfly's advantage is **entirely loss-driven**: lossless fidelity
+  shows Clements always wins on expressivity
+- The crossover shifts with N: butterfly's practical advantage extends
+  to stronger coupling at larger mesh sizes
+- Diamond achieves perfect lossless fidelity (1.000) but worst raw
+  fidelity (0.559) due to depth
+- Reck degrades on lossless fidelity at N=64 sigma=5.0 (0.804 vs
+  Clements 0.979) — an actual expressivity/optimization limitation
+
 ## Experiment Log
 
 - 145 experiments in `experiment_log.jsonl` (original 4-topology sweep)
 - 47 experiments in `results_overnight.json` (Tracks A/B1/B2 + extra datasets)
 - ~100 additional runs for Lx=0 consistency and noise curve generation
+- 4,800 SDM jobs in `sdm_sweep.json` (L-BFGS, all 6 topologies, N=4-64)
 - All figures in `figures/` (regenerated with 6 topologies)

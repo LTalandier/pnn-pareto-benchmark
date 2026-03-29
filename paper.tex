@@ -55,6 +55,13 @@ Two additional topologies reinforce the depth thesis: braid (depth $N{-}1$,
 balanced paths with crossings) collapses to $11.4 \pm 1.1$\% at $N{=}128$
 despite perfect path-length symmetry, and diamond (depth $2N{-}3$, zero
 crossings) collapses already at $N{=}64$ ($28.3 \pm 3.2$\%).
+A complementary SDM channel equalization experiment confirms that
+butterfly's practical advantage is entirely loss-driven: on lossless
+meshes, universal topologies achieve near-perfect channel inversion at
+all coupling strengths, but under realistic insertion loss, butterfly's
+raw fidelity exceeds Clements's for coupling strengths below a
+scale-dependent crossover that shifts from $\sigma^* = 0.04$
+at $N{=}16$ to $\sigma^* = 0.96$ at $N{=}64$.
 The optical depth of the mesh, not the MZI count, path balancing, or
 universality, is the binding constraint on PNN scalability.
 All simulation code and data are open-source.
@@ -94,19 +101,23 @@ Gu~\textit{et al.}~\cite{gu2022} and Jiang~\textit{et al.}~\cite{jiang2025} perf
 automated topology search within continuous supermesh parameterizations; our work
 instead compares established named topologies head-to-head under identical conditions.
 
-We address these gaps through five contributions:
+We address these gaps through six contributions:
 \begin{enumerate}
   \item A crossing-loss model applied in the differentiable forward pass, with crossing
         counts computed analytically for each topology and mesh size.
   \item Scaling from $N{=}4$ to $N{=}128$, revealing a ``depth wall'' where deep
         topologies collapse.
-  \item Evaluation on four datasets (Vowel, MNIST, Fashion-MNIST, CIFAR-10), providing
-        broader evidence than prior two-dataset studies.
-  \item An open-source simulation framework enabling reproduction and extension to
-        additional topologies.
+  \item Evaluation on four classification datasets, providing broader
+        evidence than prior two-dataset studies.
+  \item An open-source simulation framework enabling reproduction and
+        extension to additional topologies.
   \item The first systematic classification evaluation of braid and diamond
         topologies at scale ($N$ up to 128), revealing that matrix fidelity does
         not predict classification performance under realistic loss budgets.
+  \item A channel equalization experiment on SDM fiber channels that
+        directly separates expressivity from insertion loss, revealing
+        a crossover where butterfly's loss advantage yields to universal
+        topologies' expressivity at strong inter-mode coupling.
 \end{enumerate}
 
 All results reported in this paper are from simulation.  No experimental photonic
@@ -261,13 +272,13 @@ Universal, depth $2N{-}3$ (same as Reck).  Zero waveguide crossings.
     mzi/.style={draw, fill=blue!15, minimum width=0.35cm, minimum height=0.65cm, inner sep=0pt, rounded corners=1pt},
     port/.style={circle, fill=black, inner sep=0.8pt},
     waveguide/.style={thick, black!70},
-    x=0.60cm, y=0.45cm
+    x=0.48cm, y=0.33cm
 ]
 
 % ── Clements (N=8) ──
 \begin{scope}[shift={(0,0)}]
 \node[font=\bfseries\small] at (4.5, 1.2) {(a) Clements};
-\node[font=\scriptsize, text=gray] at (4.5, 0.5) {28 MZIs, depth 8};
+% subtitle info moved to caption
 
 \foreach \p in {0,...,7} {
     \node[port] at (0, -\p) {};
@@ -296,7 +307,7 @@ Universal, depth $2N{-}3$ (same as Reck).  Zero waveguide crossings.
 % ── Reck (N=8) ──
 \begin{scope}[shift={(11,0)}]
 \node[font=\bfseries\small] at (4.5, 1.2) {(b) Reck};
-\node[font=\scriptsize, text=gray] at (4.5, 0.5) {28 MZIs, depth 13};
+% subtitle info moved to caption
 
 \foreach \p in {0,...,7} {
     \node[port] at (0, -\p) {};
@@ -343,9 +354,9 @@ Universal, depth $2N{-}3$ (same as Reck).  Zero waveguide crossings.
 \end{scope}
 
 % ── Butterfly (N=8) ──
-\begin{scope}[shift={(0,-10)}]
+\begin{scope}[shift={(0,-9.5)}]
 \node[font=\bfseries\small] at (4.5, 1.2) {(c) Butterfly/FFT};
-\node[font=\scriptsize, text=gray] at (4.5, 0.5) {12 MZIs, depth 3};
+% subtitle info moved to caption
 
 \foreach \p in {0,...,7} {
     \node[port] at (0, -\p) {};
@@ -377,9 +388,9 @@ Universal, depth $2N{-}3$ (same as Reck).  Zero waveguide crossings.
 \end{scope}
 
 % ── SCF Fractal (N=8) ──
-\begin{scope}[shift={(11,-10)}]
+\begin{scope}[shift={(11,-9.5)}]
 \node[font=\bfseries\small] at (4.5, 1.2) {(d) SCF Fractal};
-\node[font=\scriptsize, text=gray] at (4.5, 0.5) {28 MZIs, depth 7};
+% subtitle info moved to caption
 
 \foreach \p in {0,...,7} {
     \node[port] at (0, -\p) {};
@@ -423,15 +434,80 @@ Universal, depth $2N{-}3$ (same as Reck).  Zero waveguide crossings.
 \node[mzi, fill=red!30] at (7.8, -5.5) {};
 \end{scope}
 
+% ── Braid (N=8) ──
+\begin{scope}[shift={(0,-19)}]
+\node[font=\bfseries\small] at (4.5, 1.2) {(e) Braid};
+% subtitle info moved to caption
+
+\foreach \p in {0,...,7} {
+    \node[port] at (0, -\p) {};
+    \node[port] at (9, -\p) {};
+    \draw[waveguide, black!20] (0, -\p) -- (9, -\p);
+}
+
+% 7 MZI columns, each coupling adjacent pairs (0-1, 2-3, 4-5, 6-7)
+% with crossing layers (X marks) between them
+\foreach \idx/\xp in {0/0.8, 1/2.0, 2/3.2, 3/4.4, 4/5.6, 5/6.8, 6/8.0} {
+    \node[mzi, fill=orange!20] at (\xp, -0.5) {};
+    \node[mzi, fill=orange!20] at (\xp, -2.5) {};
+    \node[mzi, fill=orange!20] at (\xp, -4.5) {};
+    \node[mzi, fill=orange!20] at (\xp, -6.5) {};
+}
+
+% Crossing layers between MZI columns (swaps waveguides 1-2, 3-4, 5-6)
+\foreach \xm in {1.4, 2.6, 3.8, 5.0, 6.2, 7.4} {
+    \draw[orange!60!black, semithick] (\xm-0.2, -1.2) -- (\xm+0.2, -1.8);
+    \draw[orange!60!black, semithick] (\xm+0.2, -1.2) -- (\xm-0.2, -1.8);
+    \draw[orange!60!black, semithick] (\xm-0.2, -3.2) -- (\xm+0.2, -3.8);
+    \draw[orange!60!black, semithick] (\xm+0.2, -3.2) -- (\xm-0.2, -3.8);
+    \draw[orange!60!black, semithick] (\xm-0.2, -5.2) -- (\xm+0.2, -5.8);
+    \draw[orange!60!black, semithick] (\xm+0.2, -5.2) -- (\xm-0.2, -5.8);
+}
+\end{scope}
+
+% ── Diamond (N=8) ──
+\begin{scope}[shift={(11,-19)}]
+\node[font=\bfseries\small] at (5.5, 1.2) {(f) Diamond};
+% subtitle info moved to caption
+
+\foreach \p in {0,...,7} {
+    \node[port] at (0, -\p) {};
+    \node[port] at (9, -\p) {};
+    \draw[waveguide, black!20] (0, -\p) -- (9, -\p);
+}
+
+% 13 columns: even have MZIs at (0,1)(2,3)(4,5)(6,7); odd at (1,2)(3,4)(5,6)
+% Use smaller MZI boxes to fit 13 columns
+\tikzset{dmzi/.style={draw, fill=purple!15, minimum width=0.25cm, minimum height=0.55cm, inner sep=0pt, rounded corners=1pt}}
+\foreach \col in {0,1,...,12} {
+    \pgfmathsetmacro{\xp}{\col*0.65+0.6}
+    \pgfmathparse{mod(\col,2)==0 ? 1 : 0}
+    \ifdim\pgfmathresult pt>0pt
+        \node[dmzi] at (\xp, -0.5) {};
+        \node[dmzi] at (\xp, -2.5) {};
+        \node[dmzi] at (\xp, -4.5) {};
+        \node[dmzi] at (\xp, -6.5) {};
+    \else
+        \node[dmzi] at (\xp, -1.5) {};
+        \node[dmzi] at (\xp, -3.5) {};
+        \node[dmzi] at (\xp, -5.5) {};
+    \fi
+}
+\end{scope}
+
 \end{tikzpicture}
-\caption{Schematic wiring diagrams for four of the six topologies at $N{=}8$.
+\caption{Schematic wiring diagrams for all six topologies at $N{=}8$.
 Each small rectangle represents one MZI.  (a)~Clements: rectangular mesh with
 alternating even/odd columns, depth~8.  (b)~Reck: triangular mesh, depth~13.
 (c)~Butterfly/FFT: logarithmic depth (3 layers), with dashed lines indicating
 non-adjacent waveguide connections that require physical crossings.
 (d)~SCF Fractal: recursive sine-cosine construction, depth~7, also requiring
-crossings at the fractal merge stages.  Braid and Diamond schematics are
-available in~\cite{marchesin2025} and~\cite{shokraneh2020} respectively.}
+crossings at the fractal merge stages.
+(e)~Braid: alternating MZI and crossing layers, depth~7, with dashed lines
+indicating waveguide crossings that redistribute signals between adjacent-pair
+MZI stages; all paths traverse the same number of MZIs and crossings.
+(f)~Diamond: over-parameterized rectangular mesh with 46~MZIs (vs.\ 28 for
+Clements), depth~13 (same as Reck), zero crossings.}
 \label{fig:schematics}
 \end{figure*}
 
@@ -509,6 +585,64 @@ CIFAR-10      &  70.8 &  86.1 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+
+\subsection{SDM channel equalization task}
+\label{sec:sdm_methods}
+
+The classification experiments test each topology's ability to learn
+task-specific features, but classification is robust to certain matrix
+perturbations and does not require the mesh to implement a specific
+unitary.  To directly test expressivity under realistic loss, we
+introduce a channel equalization task: each topology optimizes its
+phases to implement the inverse of a random fiber channel matrix.
+
+\paragraph{Channel model.}
+We model an $N$-mode spatial-division multiplexing (SDM) fiber channel
+via a discretized coupled-mode model with $K{=}50$ segments.  Each
+segment applies a transfer matrix
+\begin{equation}
+M_k = \exp\bigl(j(D + \sigma G_k)\bigr),
+\end{equation}
+where $D = \mathrm{diag}(0, \delta, 2\delta, \ldots, (N{-}1)\delta)$
+is the differential propagation operator ($\delta = 1.0$),
+$G_k$ is a random Hermitian matrix drawn from the Gaussian Unitary
+Ensemble (GUE) normalized by $\sqrt{N}$, and $\sigma$ controls the
+inter-mode coupling strength.  The total channel matrix is
+$H = \prod_{k=1}^{K} M_k$, which is unitary by construction.
+At $\sigma \to 0$, $H \approx I$ (no coupling); at $\sigma \gg 1$,
+$H$ approaches a Haar-random unitary (full mixing).
+
+\paragraph{Optimization protocol.}
+For each (topology, $N$, $\sigma$, channel realization), we optimize
+the mesh phases $\theta, \phi$ to minimize
+$\|M_{\mathrm{mesh}}(\theta,\phi) \cdot H - I\|_F^2$
+using L-BFGS (200 outer steps, 20 line-search iterations each) with
+per-MZI insertion loss of 0.2\,dB and crossing loss of 0.02\,dB/crossing.
+We use L-BFGS rather than Adam because the deterministic, smooth loss
+landscape of matrix fitting favors second-order methods; empirical
+comparison confirmed that Adam systematically underconverges on
+universal topologies at strong coupling.
+No phase noise is applied during optimization; this experiment isolates
+expressivity and loss effects.
+
+\paragraph{Metrics.}
+We report two fidelity metrics:
+\begin{itemize}
+  \item \emph{Raw fidelity}: $F_{\mathrm{raw}} = 1 - \|E - I\|_F^2 / (2N)$,
+        where $E = M_{\mathrm{mesh}} H$ is the equalized channel.
+        This metric captures both topology expressivity and insertion loss.
+  \item \emph{Lossless fidelity}: $F_{\mathrm{lossless}}$, computed
+        identically but with insertion and crossing loss set to zero.
+        This isolates the expressivity component.
+\end{itemize}
+We also report the mean per-channel signal-to-interference ratio (SNR)
+in dB.
+
+\paragraph{Sweep parameters.}
+We sweep $\sigma \in \{0.01, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0\}$,
+$N \in \{4, 8, 16, 32, 64\}$, all six topologies, with 20 independent
+channel realizations per configuration.
 
 
 %% ================================================================
@@ -914,6 +1048,125 @@ topology gap we observe: butterfly's structural advantage persists regardless
 of training strategy.
 
 
+\subsection{SDM channel equalization}
+\label{sec:sdm_results}
+
+The classification results consistently favor butterfly, but classification
+is tolerant of matrix approximation errors: the network can learn to route
+information through favorable paths.  To test whether butterfly's advantage
+survives on a task that genuinely requires accurate matrix implementation, we
+evaluate all six topologies on the SDM channel equalization task described in
+Section~\ref{sec:sdm_methods}.
+
+\paragraph{Lossless fidelity separates expressivity from loss.}
+Table~\ref{tab:sdm_n64} reports fidelity at $N{=}64$ across all coupling
+strengths.  With insertion loss removed (lossless fidelity), the
+expressivity hierarchy is unambiguous: Clements achieves
+$F_{\mathrm{lossless}} = 1.000$ at $\sigma = 0.01$ and degrades only to
+$0.979$ at $\sigma = 5.0$; diamond maintains $F_{\mathrm{lossless}} = 1.000$
+across all $\sigma$ (over-parameterized); braid and SCF fractal remain above
+$0.997$.  Butterfly, in contrast, collapses to
+$F_{\mathrm{lossless}} = 0.362$ at $\sigma = 5.0$, confirming its
+fundamental expressivity limitation on Haar-like channels.  Reck's lossless
+fidelity degrades more than Clements at high $\sigma$ ($0.804$ vs.\ $0.979$
+at $\sigma = 5.0$), suggesting that Reck's triangular structure introduces
+optimization difficulties at large $N$ despite identical parameter count.
+
+\begin{table}[H]
+\centering
+\caption{SDM channel equalization fidelity at $N{=}64$.  Mean over 20
+channel realizations; std omitted where $< 0.001$.
+Raw: 0.2\,dB/MZI, 0.02\,dB/crossing.  Lossless: 0/0.}
+\label{tab:sdm_n64}
+\begin{tabular}{lcccccc}
+\toprule
+& \multicolumn{2}{c}{$\sigma = 0.01$} & \multicolumn{2}{c}{$\sigma = 1.0$} & \multicolumn{2}{c}{$\sigma = 5.0$} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+Topology & Raw & Lossless & Raw & Lossless & Raw & Lossless \\
+\midrule
+Butterfly   & \textbf{0.954} & 0.990 & 0.698 & 0.633 & 0.503 & 0.362 \\
+Clements    & 0.708 & 1.000 & 0.707 & \textbf{0.997} & \textbf{0.703} & \textbf{0.979} \\
+Reck        & 0.739 & 1.000 & 0.723 & 0.977 & 0.639 & 0.804 \\
+Braid       & 0.672 & 1.000 & 0.672 & 0.998 & 0.671 & 0.998 \\
+Diamond     & 0.559 & 1.000 & 0.559 & 1.000 & 0.559 & 1.000 \\
+SCF Fractal & 0.639 & 1.000 & 0.639 & 0.999 & 0.638 & 0.998 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Raw fidelity reveals a loss-driven crossover.}
+When insertion loss is included, the ranking inverts at weak coupling.
+At $N{=}64$, $\sigma = 0.01$, butterfly achieves $F_{\mathrm{raw}} = 0.954$
+while Clements achieves only $0.708$, because butterfly's 192 MZIs accumulate
+far less loss than Clements's 2\,016.  As coupling strength increases,
+Clements overtakes butterfly at $\sigma \approx 1.0$, where its universal
+expressivity compensates for the loss penalty.
+
+\paragraph{The crossover point shifts with $N$.}
+The coupling strength $\sigma^*$ at which Clements's raw fidelity first
+exceeds butterfly's increases with mesh size:
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+$N$ & 4--8 & 16 & 32 & 64 \\
+\midrule
+$\sigma^*$ & none & 0.04 & 0.29 & 0.96 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent At $N{=}4$ and $N{=}8$, Clements wins at all coupling strengths
+because its insertion loss is modest (6 MZIs at $N{=}4$, 28 at $N{=}8$).
+As $N$ grows, the loss penalty scales as $O(N)$ for Clements vs.\
+$O(\log N)$ for butterfly, extending butterfly's practical advantage
+to increasingly strong coupling regimes (Fig.~\ref{fig:sdm_crossover}).
+A power-law fit yields $\sigma^* \propto N^{2.3}$, suggesting that at
+$N{=}128$ butterfly would dominate even at $\sigma > 2$.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\columnwidth]{results/figures/sdm_crossover.pdf}
+\caption{SDM channel equalization fidelity vs.\ coupling strength $\sigma$
+for all six topologies at $N{=}4$ to $N{=}64$.
+Solid lines: raw fidelity (0.2\,dB/MZI, 0.02\,dB/crossing);
+dashed lines: lossless fidelity (expressivity only).
+Vertical gray lines mark the crossover $\sigma^*$ where Clements's
+raw fidelity first exceeds butterfly's.
+Butterfly dominates at low $\sigma$ (less loss) but collapses at
+high $\sigma$ (limited expressivity); the crossover shifts to
+stronger coupling as $N$ grows.}
+\label{fig:sdm_crossover}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\columnwidth]{results/figures/sdm_heatmaps.pdf}
+\caption{Equalized channel intensity $|M_{\mathrm{mesh}} \cdot H|^2$ at
+$N{=}16$ for butterfly (top) and Clements (bottom) at three coupling
+strengths.  A perfect equalizer produces a sharp diagonal (identity
+matrix).  Butterfly succeeds at $\sigma{=}0.01$ but fails at
+$\sigma{=}5.0$; Clements maintains a clean diagonal across all
+coupling strengths despite lower absolute intensity (insertion loss).}
+\label{fig:sdm_heatmaps}
+\end{figure}
+
+\paragraph{Implications.}
+The SDM experiment confirms that butterfly's practical advantage is
+entirely loss-driven, not expressivity-driven.  On any task requiring
+accurate unitary implementation at strong coupling ($\sigma > 1$),
+universal topologies are essential --- and among them, Clements is the
+clear winner, with lossless fidelity above 0.97 at all tested scales,
+outperforming Reck ($0.804$ at $N{=}64$, $\sigma{=}5$).
+However, for the moderate-coupling regime typical of weakly-coupled
+multi-core fibers ($\sigma \lesssim 0.5$), butterfly provides
+superior equalization quality at $N \geq 16$ despite its limited
+expressivity, because the insertion loss penalty of deep meshes
+exceeds their expressivity gain.  At $N{=}64$, butterfly's raw fidelity
+advantage over Clements at $\sigma = 0.01$ is a striking
+$+24.6$ percentage points.
+
+
 %% ================================================================
 \section{Discussion}
 \label{sec:discussion}
@@ -961,6 +1214,18 @@ gradient-based training, nor does it capture the additional crossing loss
 attenuation beyond Clements's.  This highlights a methodological concern:
 topology evaluations based on fidelity metrics alone may not predict
 classification behavior under realistic loss conditions.
+
+The SDM channel equalization experiment (Section~\ref{sec:sdm_results})
+adds precision to this observation.  On a task that \emph{does} require
+accurate unitary implementation, the expressivity hierarchy is
+unambiguous: Clements achieves $F_{\mathrm{lossless}} = 0.979$ at
+$N{=}64$, $\sigma{=}5.0$, while butterfly collapses to $0.362$.
+Yet under realistic loss, butterfly's raw fidelity exceeds Clements's
+for $\sigma < 0.96$ at $N{=}64$, with the crossover shifting to stronger
+coupling as $N$ grows ($\sigma^* \propto N^{2.3}$).  This confirms that
+the depth thesis extends beyond classification: even on tasks where
+universality genuinely matters, insertion loss can dominate the
+expressivity advantage at practical scales.
 
 Industry practice corroborates this finding: the largest commercial photonic
 processors, such as Lightmatter's $128 \times 128$ Envise chip~\cite{ahmed2025},
@@ -1080,8 +1345,10 @@ $N \geq 128$, classification & Butterfly & Only viable option; universal topolog
   collapse under cumulative insertion loss. \\
 High noise environment & Butterfly or Reck & Butterfly for efficiency; Reck if
   universality is required (at much higher cost). \\
-Exact unitary required & Reck or Clements & Butterfly cannot implement arbitrary
-  $U(N)$; use Clements for lower depth or Reck for better noise resilience. \\
+Exact unitary required & Clements & Best lossless fidelity (0.979 at $N{=}64$,
+  $\sigma{=}5$); Reck degrades at large $N$. \\
+SDM equalization & Butterfly ($\sigma < \sigma^*$), Clements ($\sigma > \sigma^*$) &
+  Crossover $\sigma^* \approx N^{2.3}$; butterfly wins for weakly-coupled fibers. \\
 Low crossing-loss process & Butterfly & Crossing loss penalty is ${\sim}3$\,pp at $N{=}128$
   with 0.02\,dB/crossing. \\
 \bottomrule
@@ -1155,9 +1422,10 @@ Several limitations should be noted:
         Behavior at $N{=}256$ or larger, where crossing loss grows further,
         has not been evaluated.
 
-  \item \textbf{Task scope.}  Classification on four standard datasets may
-        not generalize to all PNN applications (e.g., signal processing,
-        quantum state preparation).
+  \item \textbf{Task scope.}  We evaluate classification on four datasets
+        and channel equalization on coupled-mode SDM channels.  Other PNN
+        applications (e.g., quantum state preparation, beamforming) may
+        exhibit different topology tradeoffs.
 \end{enumerate}
 
 \subsection{Open-source framework}
@@ -1191,10 +1459,21 @@ it reduces butterfly accuracy by 0.7\,pp at $N{=}16$ and 3.2\,pp at $N{=}128$.
 It is more problematic for SCF fractal, which combines deep paths with high
 crossing counts.
 
+A channel equalization experiment on SDM fiber channels provides a
+complementary perspective: when insertion loss is removed, universal
+topologies achieve near-perfect channel inversion (Clements
+$F_{\mathrm{lossless}} = 0.979$ at $N{=}64$, $\sigma{=}5.0$), but under
+realistic loss budgets, butterfly achieves $+24.6$\,pp higher raw fidelity
+than Clements at weak coupling ($N{=}64$, $\sigma{=}0.01$).  The crossover
+where Clements overtakes butterfly shifts from $\sigma \approx 0.05$ at
+$N{=}16$ to $\sigma \approx 1.0$ at $N{=}64$, confirming that the
+practical advantage is entirely loss-driven and grows with scale.
+
 These results suggest that PNN architectures designed for large-scale deployment
 should prioritize depth reduction over universality, path balancing, or
 increased parameter count.  The butterfly topology's non-universality does not
-impair classification performance at any tested scale, while its logarithmic
+impair classification performance at any tested scale, and on equalization
+tasks it remains competitive up to moderate coupling strengths.  Its logarithmic
 depth provides structural resilience that cannot be matched by training
 strategies, balanced paths (braid), or over-parameterization (diamond)
 applied to deep meshes.

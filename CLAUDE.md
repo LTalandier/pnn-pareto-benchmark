@@ -25,3 +25,16 @@ git log --oneline -10    # Recent experiments
 - git commit after each successful run
 - Do the systematic sweep FIRST before any creative experiments
 - Write results/summary.md when stopping
+
+## SDM Experiment (Active)
+
+A dual-agent workflow is set up in `shared/`. Two Claude Code sessions coordinate through shared files:
+
+- **Executor** (`shared/executor_role.md`): implements code, runs experiments, reports results
+- **Supervisor** (`shared/supervisor_role.md`): evaluates results, assigns tasks, writes paper sections
+
+Coordination files:
+- `shared/task_queue.md` — supervisor assigns, executor reads
+- `shared/results_log.md` — executor writes, supervisor evaluates
+- `shared/decisions_needed.md` — executor flags questions for supervisor
+- `shared/escalate_to_human.md` — either agent escalates to Lucas
